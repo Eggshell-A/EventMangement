@@ -1,0 +1,1 @@
+<?php require __DIR__ . '/includes/bootstrap.php'; if($_SERVER['REQUEST_METHOD']!=='POST') { http_response_code(405); exit('Method not allowed.'); } $_SESSION=[]; session_destroy(); session_start(); flash('You have been logged out.'); redirect('index.php');

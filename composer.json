@@ -1,0 +1,12 @@
+{
+  "name": "eventlink/student-mvp",
+  "description": "EventLink university event management MVP",
+  "type": "project",
+  "require": {
+    "php": "^8.0",
+    "chillerlan/php-qrcode": "^5.0"
+  },
+  "config": {
+    "sort-packages": true
+  }
+}
