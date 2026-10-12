@@ -18,6 +18,10 @@ Organisers create events; each begins pending. Admin approves it before it appea
 
 After approval, organisers can open **Print poster** from the dashboard. The poster includes a QR code and readable short link (`e.php?id=...`). Set `base_url` to a URL reachable by people scanning the poster; `localhost` only works on the computer running XAMPP.
 
+## Demo video
+
+[Watch the EventLink demo video](assets/demo/eventlink-demo.mov)
+
 ## Important limitations
 
 QR and poster pages use the installed Composer dependency. The MVP has no email, image upload, filters, password reset, automated waitlist offers, or QR scanning. On cancellation, the earliest waitlist entry is identified in a flash message but is not offered/converted automatically. Current test finding: a person already on the waiting list cannot manually claim capacity that later reopens; see `TESTING.md`.
