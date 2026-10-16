@@ -14,7 +14,7 @@ $extraStylesheet = 'assets/poster.css';
 require __DIR__ . '/includes/header.php';
 ?>
 <article class="poster card">
-  <p class="poster-brand">EventLink presents</p>
+  <p class="poster-brand">Fairboard presents</p>
   <h1><?= e($event['title']) ?></h1>
   <p class="poster-date"><?= e(date('l j F Y · H:i', strtotime($event['start_time']))) ?></p>
   <p class="poster-location"><?= e($event['location']) ?></p>
@@ -22,7 +22,7 @@ require __DIR__ . '/includes/header.php';
   <img class="poster-qr" src="qr.php?id=<?= $id ?>" alt="QR code linking to the event page">
   <p class="poster-instruction">Scan to view event details and book a place</p>
   <p class="poster-url"><?= e($eventUrl) ?></p>
-  <p class="poster-organiser">Organised by <?= e($event['organiser_name']) ?></p>
+  <p class="poster-organiser">Created by <?= e($event['organiser_name']) ?></p>
 </article>
 <p class="no-print"><button type="button" onclick="window.print()">Print A4 poster</button></p>
 <?php require __DIR__ . '/includes/footer.php'; ?>

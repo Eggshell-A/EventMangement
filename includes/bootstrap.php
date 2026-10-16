@@ -12,12 +12,19 @@ if (!file_exists($configPath)) {
 $config = require $configPath;
 
 try {
-    $pdo = new PDO(
-        'mysql:host=' . $config['db_host'] . ';dbname=' . $config['db_name'] . ';charset=utf8mb4',
-        $config['db_user'],
-        $config['db_pass'],
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
-    );
+    $dsn = 'mysql:host=' . $config['db_host'] . ';dbname=' . $config['db_name'] . ';charset=utf8mb4';
+    if (!empty($config['db_port'])) {
+        $dsn = 'mysql:host=' . $config['db_host'] . ';port=' . $config['db_port'] . ';dbname=' . $config['db_name'] . ';charset=utf8mb4';
+    }
+    $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC];
+    $sslCa = (string) ($config['db_ssl_ca'] ?? '');
+    if ($sslCa !== '' && is_readable($sslCa) && defined('PDO::MYSQL_ATTR_SSL_CA')) {
+        $options[constant('PDO::MYSQL_ATTR_SSL_CA')] = $sslCa;
+    }
+    if (!empty($config['db_ssl_verify']) && defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')) {
+        $options[constant('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')] = true;
+    }
+    $pdo = new PDO($dsn, $config['db_user'], $config['db_pass'], $options);
 } catch (PDOException $exception) {
     exit('Database connection failed. Check config.php and XAMPP MySQL.');
 }

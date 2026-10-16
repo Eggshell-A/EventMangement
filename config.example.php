@@ -1,9 +1,15 @@
 <?php
-// Copy this file to config.php and set local XAMPP MySQL details. Never commit config.php.
+// Copy this file to config.php and set the real values there. Never commit config.php.
+// Aiven uses database defaultdb, port 14574, SSL REQUIRED, and a ca.pem file.
+// Point db_ssl_ca at that ca.pem and set db_ssl_verify to true.
+// Local XAMPP can use db_name eventlink, an empty db_port, an empty db_ssl_ca, and db_ssl_verify false.
 return [
-    'db_host' => '127.0.0.1',
-    'db_name' => 'eventlink',
-    'db_user' => 'root',
-    'db_pass' => '',
+    'db_host' => 'your-host.example',
+    'db_port' => '14574',
+    'db_name' => 'defaultdb',
+    'db_user' => 'your-db-user',
+    'db_pass' => 'replace-with-password',
+    'db_ssl_ca' => '/absolute/path/to/ca.pem',
+    'db_ssl_verify' => true,
     'base_url' => 'http://localhost/eventlink',
 ];

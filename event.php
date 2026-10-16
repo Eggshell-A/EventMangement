@@ -1,4 +1,71 @@
-<?php require __DIR__.'/includes/bootstrap.php'; $id=(int)($_GET['id']??0);$statement=$pdo->prepare('SELECT e.*,u.name organiser_name FROM events e JOIN users u ON u.user_id=e.organiser_id WHERE e.event_id=?');$statement->execute([$id]);$event=$statement->fetch();if(!$event||!eventIsAccessible($event)){http_response_code(404);exit('Event not found.');}$info=eventCapacityInfo($pdo,$id);$remaining=max(0,(int)$event['capacity']-$info['bookings']);$alreadyBooked=false;$alreadyWaiting=false;if(isLoggedIn()){$statement=$pdo->prepare('SELECT 1 FROM bookings WHERE event_id=? AND user_id=?');$statement->execute([$id,currentUser()['user_id']]);$alreadyBooked=(bool)$statement->fetchColumn();$statement=$pdo->prepare('SELECT 1 FROM waiting_list WHERE event_id=? AND user_id=?');$statement->execute([$id,currentUser()['user_id']]);$alreadyWaiting=(bool)$statement->fetchColumn();}$pageTitle=$event['title'];require __DIR__.'/includes/header.php'; ?>
-<article class="card"><p class="status <?=e($event['status'])?>"><?=e($event['status'])?></p><h1><?=e($event['title'])?></h1><p class="meta">Organised by <?=e($event['organiser_name'])?><br><?=e(date('l j F Y, H:i',strtotime($event['start_time'])))?><br><?=e($event['location'])?></p><p><?=nl2br(e($event['description']))?></p><h2>Availability</h2><p><strong><?= (int)$event['capacity']?></strong> total places · <strong><?= $info['bookings']?></strong> confirmed · <strong><?= $remaining?></strong> remaining</p><?php if($remaining===0):?><p class="notice">This event is full. <?= $info['waiting']?> <?= $info['waiting']===1?'person is':'people are'?> in the waiting list.</p><?php endif?>
-<?php if($event['status']==='approved'): ?><div class="no-print"><?php if(!isLoggedIn()):?><a class="button" href="login.php">Log in to book</a><?php elseif(isRole('attendee')): ?><?php if($alreadyBooked):?><p class="notice">You already have a confirmed place.</p><?php elseif($alreadyWaiting):?><p class="notice">You are already in the waiting list.</p><?php elseif($remaining>0):?><form method="post" action="booking_action.php"><input type="hidden" name="event_id" value="<?=$id?>"><input type="hidden" name="action" value="book"><button>Book one place</button></form><?php else:?><form method="post" action="booking_action.php"><input type="hidden" name="event_id" value="<?=$id?>"><input type="hidden" name="action" value="wait"><button>Join waiting list</button></form><?php endif;?><?php endif;?></div><?php endif;?>
-<?php if(isEventOwnerOrAdmin($event)):?><p class="no-print"><a class="button" href="attendees.php?event_id=<?=$id?>">View attendee list</a></p><?php endif?></article><?php require __DIR__.'/includes/footer.php';
+<?php
+require __DIR__ . '/includes/bootstrap.php';
+$id = (int) ($_GET['id'] ?? 0);
+$statement = $pdo->prepare(eventCardSql() . ' WHERE e.event_id = ?');
+$statement->execute([$id]);
+$event = $statement->fetch();
+if (!$event || !eventIsAccessible($event)) {
+    http_response_code(404);
+    exit('Event not found.');
+}
+$left = placesLeft($event);
+$fee = planFeeLabel($event['plan_code'] ?? null);
+$alreadyBooked = false;
+$alreadyWaiting = false;
+if (isLoggedIn()) {
+    $statement = $pdo->prepare('SELECT 1 FROM bookings WHERE event_id = ? AND user_id = ?');
+    $statement->execute([$id, currentUser()['user_id']]);
+    $alreadyBooked = (bool) $statement->fetchColumn();
+    $statement = $pdo->prepare('SELECT 1 FROM waiting_list WHERE event_id = ? AND user_id = ?');
+    $statement->execute([$id, currentUser()['user_id']]);
+    $alreadyWaiting = (bool) $statement->fetchColumn();
+}
+$next = 'event.php?id=' . $id;
+$pageTitle = $event['title'];
+require __DIR__ . '/includes/header.php';
+?>
+<article class="detail">
+  <div class="poster tone-<?= posterTone($event['title']) ?> detail-poster" aria-hidden="true"><?= e(mb_substr($event['title'], 0, 1)) ?></div>
+  <div class="detail-copy">
+    <p class="kicker"><?= e(organisationName($event)) ?></p>
+    <h1><?= e($event['title']) ?></h1>
+    <p class="meta"><?= e(date('l j F Y, H:i', strtotime($event['start_time']))) ?><br><?= e($event['location']) ?></p>
+    <?php if ($fee !== ''): ?><p class="fee"><?= e($fee) ?></p><?php endif; ?>
+    <p><?= nl2br(e($event['description'])) ?></p>
+    <p class="places-line"><strong><?= $left ?></strong> <?= $left === 1 ? 'place' : 'places' ?> left of <?= (int) $event['capacity'] ?><?php if ((int) $event['waiting_count'] > 0): ?> · <?= (int) $event['waiting_count'] ?> waiting<?php endif; ?></p>
+    <?php if ($event['status'] === 'approved'): ?>
+      <div class="join-box no-print">
+        <?php if (!isLoggedIn()): ?>
+          <a class="button" href="login.php?next=<?= e($next) ?>">Join</a>
+          <p class="muted">You need to log in before joining.</p>
+        <?php elseif (isRole('user')): ?>
+          <?php if ($alreadyBooked): ?>
+            <p class="notice">You have a place. <a href="booked.php?id=<?= $id ?>">View your booking</a></p>
+          <?php elseif ($alreadyWaiting): ?>
+            <p class="notice">You are on the waiting list.</p>
+          <?php elseif ($left > 0): ?>
+            <form method="post" action="booking_action.php">
+              <input type="hidden" name="event_id" value="<?= $id ?>">
+              <input type="hidden" name="action" value="book">
+              <button>Join</button>
+            </form>
+          <?php else: ?>
+            <form method="post" action="booking_action.php">
+              <input type="hidden" name="event_id" value="<?= $id ?>">
+              <input type="hidden" name="action" value="wait">
+              <button>Join waiting list</button>
+            </form>
+          <?php endif; ?>
+        <?php else: ?>
+          <p class="notice">Log in with a user account to join this event.</p>
+        <?php endif; ?>
+      </div>
+    <?php else: ?>
+      <p class="status <?= e($event['status']) ?>"><?= e($event['status']) ?></p>
+    <?php endif; ?>
+    <?php if (isEventOwnerOrAdmin($event)): ?>
+      <p class="no-print"><a class="button" href="attendees.php?event_id=<?= $id ?>">View attendee list</a></p>
+    <?php endif; ?>
+  </div>
+</article>
+<?php require __DIR__ . '/includes/footer.php';

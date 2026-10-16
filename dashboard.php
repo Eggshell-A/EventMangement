@@ -1,2 +1,38 @@
-<?php require __DIR__.'/includes/bootstrap.php';requireRole('organiser');$statement=$pdo->prepare('SELECT e.*,COUNT(DISTINCT b.booking_id) booking_count,COUNT(DISTINCT w.entry_id) waiting_count FROM events e LEFT JOIN bookings b ON b.event_id=e.event_id LEFT JOIN waiting_list w ON w.event_id=e.event_id WHERE e.organiser_id=? GROUP BY e.event_id ORDER BY e.start_time DESC');$statement->execute([currentUser()['user_id']]);$events=$statement->fetchAll();$pageTitle='Organiser dashboard';require __DIR__.'/includes/header.php'; ?>
-<div class="actions"><h1>My events</h1><a class="button" href="event_form.php">Create event</a></div><?php if(!$events):?><p class="notice">You have not created any events.</p><?php else:?><table><thead><tr><th>Event</th><th>Status / demand</th><th class="no-print">Actions</th></tr></thead><tbody><?php foreach($events as $event):$remaining=max(0,(int)$event['capacity']-(int)$event['booking_count']);?><tr><td><strong><?=e($event['title'])?></strong><br><span class="muted"><?=e(date('j M Y, H:i',strtotime($event['start_time'])))?></span></td><td><span class="status <?=e($event['status'])?>"><?=e($event['status'])?></span><br><?= (int)$event['booking_count']?> / <?= (int)$event['capacity']?> booked · <?= $remaining?> left<br><?= (int)$event['waiting_count']?> in waiting list</td><td class="no-print"><div class="actions"><a class="button small" href="event_form.php?id=<?=(int)$event['event_id']?>">Edit</a><a class="button small" href="attendees.php?event_id=<?=(int)$event['event_id']?>">Attendees</a><?php if($event['status']==='approved'):?><a class="button small" href="poster.php?id=<?=(int)$event['event_id']?>">Print poster</a><?php endif?><form method="post" action="organiser_action.php"><input type="hidden" name="event_id" value="<?= (int)$event['event_id']?>"><input type="number" aria-label="Places to add" name="add_places" min="1" required><button class="small">Add places</button></form><form method="post" action="organiser_action.php"><input type="hidden" name="event_id" value="<?= (int)$event['event_id']?>"><input type="hidden" name="action" value="cancel"><button class="danger small">Cancel event</button></form></div></td></tr><?php endforeach?></tbody></table><?php endif;require __DIR__.'/includes/footer.php';
+<?php
+require __DIR__ . '/includes/bootstrap.php';
+requireRole('creator');
+$statement = $pdo->prepare('SELECT e.*, COUNT(DISTINCT b.booking_id) booking_count, COUNT(DISTINCT w.entry_id) waiting_count FROM events e LEFT JOIN bookings b ON b.event_id = e.event_id LEFT JOIN waiting_list w ON w.event_id = e.event_id WHERE e.organiser_id = ? GROUP BY e.event_id ORDER BY e.start_time DESC');
+$statement->execute([currentUser()['user_id']]);
+$events = $statement->fetchAll();
+$pageTitle = 'My events';
+require __DIR__ . '/includes/header.php';
+?>
+<div class="page-head">
+  <h1>My events</h1>
+  <a class="button" href="event_form.php">Create event</a>
+</div>
+<?php if (!$events): ?>
+  <p class="notice">You have not created any events.</p>
+<?php else: ?>
+  <ul class="mine-list">
+    <?php foreach ($events as $event): $remaining = max(0, (int) $event['capacity'] - (int) $event['booking_count']); ?>
+      <li class="mine-card">
+        <div>
+          <strong><?= e($event['title']) ?></strong>
+          <p class="meta"><?= e(date('D j M Y, H:i', strtotime($event['start_time']))) ?> · <?= e($event['location']) ?></p>
+          <p><span class="status <?= e($event['status']) ?>"><?= e($event['status']) ?></span> · <?= (int) $event['booking_count'] ?> / <?= (int) $event['capacity'] ?> booked · <?= $remaining ?> left · <?= (int) $event['waiting_count'] ?> waiting</p>
+        </div>
+        <div class="event-actions">
+          <a class="action-btn edit" href="event_form.php?id=<?= (int) $event['event_id'] ?>">Edit</a>
+          <a class="action-btn attendees" href="attendees.php?event_id=<?= (int) $event['event_id'] ?>">Attendees</a>
+          <?php if ($event['status'] === 'approved'): ?>
+            <a class="action-btn print" href="poster.php?id=<?= (int) $event['event_id'] ?>">Print poster</a>
+          <?php else: ?>
+            <span class="action-btn print is-off">Print poster</span>
+          <?php endif; ?>
+        </div>
+      </li>
+    <?php endforeach; ?>
+  </ul>
+<?php endif; ?>
+<?php require __DIR__ . '/includes/footer.php';
