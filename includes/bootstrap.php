@@ -18,11 +18,21 @@ try {
     }
     $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC];
     $sslCa = (string) ($config['db_ssl_ca'] ?? '');
-    if ($sslCa !== '' && is_readable($sslCa) && defined('PDO::MYSQL_ATTR_SSL_CA')) {
-        $options[constant('PDO::MYSQL_ATTR_SSL_CA')] = $sslCa;
+    if (defined('Pdo\Mysql::ATTR_SSL_CA')) {
+        $sslCaAttr = \Pdo\Mysql::ATTR_SSL_CA;
+        $sslVerifyAttr = \Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT;
+    } elseif (defined('PDO::MYSQL_ATTR_SSL_CA')) {
+        $sslCaAttr = constant('PDO::MYSQL_ATTR_SSL_CA');
+        $sslVerifyAttr = constant('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT');
+    } else {
+        $sslCaAttr = null;
+        $sslVerifyAttr = null;
     }
-    if (!empty($config['db_ssl_verify']) && defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')) {
-        $options[constant('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')] = true;
+    if ($sslCa !== '' && is_readable($sslCa) && $sslCaAttr !== null) {
+        $options[$sslCaAttr] = $sslCa;
+    }
+    if (!empty($config['db_ssl_verify']) && $sslVerifyAttr !== null) {
+        $options[$sslVerifyAttr] = true;
     }
     $pdo = new PDO($dsn, $config['db_user'], $config['db_pass'], $options);
 } catch (PDOException $exception) {
