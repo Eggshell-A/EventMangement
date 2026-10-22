@@ -19,7 +19,7 @@ require __DIR__ . '/includes/header.php';
           <p class="meta"><?= e(date('D j M Y, H:i', strtotime($booking['start_time']))) ?><br><?= e($booking['location']) ?></p>
           <p><?= $booking['checked_in'] ? 'Checked in' : 'Confirmed' ?></p>
         </div>
-        <form method="post" action="cancel_booking.php">
+        <form method="post" action="cancel_booking.php"><?= csrfField() ?>
           <input type="hidden" name="booking_id" value="<?= (int) $booking['booking_id'] ?>">
           <button class="danger" type="submit">Cancel booking</button>
         </form>

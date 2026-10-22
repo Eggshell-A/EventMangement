@@ -1,0 +1,458 @@
+{
+  "tests": [
+    {
+      "test": "fresh schema and repeatable existing-database migration",
+      "status": "PASS"
+    },
+    {
+      "test": "HTTP local cookie has HttpOnly and SameSite=Lax",
+      "status": "PASS"
+    },
+    {
+      "test": "CSP, clickjacking, MIME and cache headers",
+      "status": "PASS"
+    },
+    {
+      "test": "login.php: missing CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "login.php: wrong CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "register.php: missing CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "register.php: wrong CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "event_form.php: missing CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "event_form.php: wrong CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "booking_action.php: missing CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "booking_action.php: wrong CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "cancel_booking.php: missing CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "cancel_booking.php: wrong CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "organiser_action.php: missing CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "organiser_action.php: wrong CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "admin_action.php: missing CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "admin_action.php: wrong CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "checkin.php: missing CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "checkin.php: wrong CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "logout.php: missing CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "logout.php: wrong CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "array-valued CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "another session's CSRF rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "strict session mode rejects supplied session ID",
+      "status": "PASS"
+    },
+    {
+      "test": "login rotates session ID and CSRF token",
+      "status": "PASS"
+    },
+    {
+      "test": "pre-login token no longer authorises a POST",
+      "status": "PASS"
+    },
+    {
+      "test": "old pre-login session cannot access bookings",
+      "status": "PASS"
+    },
+    {
+      "test": "creator login keeps the dashboard redirect",
+      "status": "PASS"
+    },
+    {
+      "test": "admin login keeps the admin redirect",
+      "status": "PASS"
+    },
+    {
+      "test": "my_bookings.php: all rendered POST forms contain one token",
+      "status": "PASS"
+    },
+    {
+      "test": "dashboard.php: all rendered POST forms contain one token",
+      "status": "PASS"
+    },
+    {
+      "test": "event_form.php: all rendered POST forms contain one token",
+      "status": "PASS"
+    },
+    {
+      "test": "attendees.php?event_id=1: all rendered POST forms contain one token",
+      "status": "PASS"
+    },
+    {
+      "test": "admin.php: all rendered POST forms contain one token",
+      "status": "PASS"
+    },
+    {
+      "test": "event.php?id=1: all rendered POST forms contain one token",
+      "status": "PASS"
+    },
+    {
+      "test": "foreign organiser cannot read attendee list",
+      "status": "PASS"
+    },
+    {
+      "test": "attendee cannot access admin page",
+      "status": "PASS"
+    },
+    {
+      "test": "attendee cannot approve event by direct POST",
+      "status": "PASS"
+    },
+    {
+      "test": "organiser cannot cancel another organiser's event",
+      "status": "PASS"
+    },
+    {
+      "test": "organiser cannot edit another organiser's event",
+      "status": "PASS"
+    },
+    {
+      "test": "organiser cannot add places to another organiser's event",
+      "status": "PASS"
+    },
+    {
+      "test": "failed ownership requests preserve event",
+      "status": "PASS"
+    },
+    {
+      "test": "valid admin approval works",
+      "status": "PASS"
+    },
+    {
+      "test": "staff login keeps the staff redirect",
+      "status": "PASS"
+    },
+    {
+      "test": "assigned staff edit form includes CSRF tokens",
+      "status": "PASS"
+    },
+    {
+      "test": "assigned staff can edit and return to staff page",
+      "status": "PASS"
+    },
+    {
+      "test": "unassigned staff cannot read or edit an event",
+      "status": "PASS"
+    },
+    {
+      "test": "staff cannot create events by GET or direct POST",
+      "status": "PASS"
+    },
+    {
+      "test": "revoked staff assignment takes effect without logout",
+      "status": "PASS"
+    },
+    {
+      "test": "staff cannot access creator, booking or admin actions",
+      "status": "PASS"
+    },
+    {
+      "test": "user cannot verify school email by direct POST",
+      "status": "PASS"
+    },
+    {
+      "test": "admin verification rejects array identifiers",
+      "status": "PASS"
+    },
+    {
+      "test": "school verification and creator plan update still work",
+      "status": "PASS"
+    },
+    {
+      "test": "failed school verification rolls back user and plan changes",
+      "status": "PASS"
+    },
+    {
+      "test": "array-valued login destination does not crash",
+      "status": "PASS"
+    },
+    {
+      "test": "user login returns to the selected event",
+      "status": "PASS"
+    },
+    {
+      "test": "external login destination cannot redirect off-site",
+      "status": "PASS"
+    },
+    {
+      "test": "array-valued identifier rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "SQL-shaped event identifier rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "valid booking still works",
+      "status": "PASS"
+    },
+    {
+      "test": "attendee cannot cancel another user's booking",
+      "status": "PASS"
+    },
+    {
+      "test": "foreign organiser cannot check in booking",
+      "status": "PASS"
+    },
+    {
+      "test": "owner check-in works",
+      "status": "PASS"
+    },
+    {
+      "test": "confirmed attendee cannot also join waitlist",
+      "status": "PASS"
+    },
+    {
+      "test": "waitlist works when full",
+      "status": "PASS"
+    },
+    {
+      "test": "cancellation preserves queue privacy",
+      "status": "PASS"
+    },
+    {
+      "test": "cancellation automatically promotes the first waiter",
+      "status": "PASS"
+    },
+    {
+      "test": "promoted waiter sees the current booking confirmation",
+      "status": "PASS"
+    },
+    {
+      "test": "waitlisted user can claim a place after capacity increases",
+      "status": "PASS"
+    },
+    {
+      "test": "claim removes stale waitlist membership atomically",
+      "status": "PASS"
+    },
+    {
+      "test": "owner can add places",
+      "status": "PASS"
+    },
+    {
+      "test": "invalid capacity rejected without update",
+      "status": "PASS"
+    },
+    {
+      "test": "removed event cannot be booked",
+      "status": "PASS"
+    },
+    {
+      "test": "eight concurrent final-seat requests leave exactly one booking",
+      "status": "PASS"
+    },
+    {
+      "test": "concurrent cancellations preserve FIFO promotion and capacity",
+      "status": "PASS"
+    },
+    {
+      "test": "concurrent capacity reduction never falls below bookings",
+      "status": "PASS"
+    },
+    {
+      "test": "duplicate request leaves one booking",
+      "status": "PASS"
+    },
+    {
+      "test": "database failure rolls back and hides SQL detail",
+      "status": "PASS"
+    },
+    {
+      "test": "booking recovers after a rolled-back database failure",
+      "status": "PASS"
+    },
+    {
+      "test": "failed promotion rolls back cancellation and queue atomically",
+      "status": "PASS"
+    },
+    {
+      "test": "stored event title is output-encoded",
+      "status": "PASS"
+    },
+    {
+      "test": "password policy rejects case 1",
+      "status": "PASS"
+    },
+    {
+      "test": "password policy rejects case 2",
+      "status": "PASS"
+    },
+    {
+      "test": "password policy rejects case 3",
+      "status": "PASS"
+    },
+    {
+      "test": "password policy rejects case 4",
+      "status": "PASS"
+    },
+    {
+      "test": "password policy rejects case 5",
+      "status": "PASS"
+    },
+    {
+      "test": "password policy rejects case 6",
+      "status": "PASS"
+    },
+    {
+      "test": "password policy rejects case 7",
+      "status": "PASS"
+    },
+    {
+      "test": "registration cannot choose admin role",
+      "status": "PASS"
+    },
+    {
+      "test": "strong-password registration works",
+      "status": "PASS"
+    },
+    {
+      "test": "new passwords use bcrypt cost 12",
+      "status": "PASS"
+    },
+    {
+      "test": "duplicate registration creates no extra account",
+      "status": "PASS"
+    },
+    {
+      "test": "registration is IP-rate-limited",
+      "status": "PASS"
+    },
+    {
+      "test": "unknown accounts have the same account lockout",
+      "status": "PASS"
+    },
+    {
+      "test": "new session cannot bypass account limiter and Retry-After is set",
+      "status": "PASS"
+    },
+    {
+      "test": "known account temporarily blocks even valid password",
+      "status": "PASS"
+    },
+    {
+      "test": "expired lockout permits login",
+      "status": "PASS"
+    },
+    {
+      "test": "IP spray limit cannot be bypassed with forwarding headers",
+      "status": "PASS"
+    },
+    {
+      "test": "Unicode collation alias cannot authenticate",
+      "status": "PASS"
+    },
+    {
+      "test": "array-valued password rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "existing password hash upgrades on successful login",
+      "status": "PASS"
+    },
+    {
+      "test": "idle timeout removes authenticated access",
+      "status": "PASS"
+    },
+    {
+      "test": "absolute timeout applies despite recent activity",
+      "status": "PASS"
+    },
+    {
+      "test": "role revocation takes effect without logout",
+      "status": "PASS"
+    },
+    {
+      "test": "state-changing GET is rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "valid logout works",
+      "status": "PASS"
+    },
+    {
+      "test": "logout invalidates previous session and CSRF",
+      "status": "PASS"
+    },
+    {
+      "test": "poster uses CSP-compatible external print handler",
+      "status": "PASS"
+    },
+    {
+      "test": "installed QR library returns approved-event SVG",
+      "status": "PASS"
+    },
+    {
+      "test": "QR endpoint hides unapproved events",
+      "status": "PASS"
+    },
+    {
+      "test": "poster and external script load under restrictive CSP",
+      "status": "PASS"
+    },
+    {
+      "test": "HTTPS configuration sets Secure cookie and optional HSTS",
+      "status": "PASS"
+    },
+    {
+      "test": "missing authentication migration fails closed",
+      "status": "PASS"
+    }
+  ],
+  "passed": 113,
+  "failed": 0
+}

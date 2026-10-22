@@ -41,16 +41,16 @@ require __DIR__ . '/includes/header.php';
         <?php elseif (isRole('user')): ?>
           <?php if ($alreadyBooked): ?>
             <p class="notice">You have a place. <a href="booked.php?id=<?= $id ?>">View your booking</a></p>
-          <?php elseif ($alreadyWaiting): ?>
+          <?php elseif ($alreadyWaiting && $left === 0): ?>
             <p class="notice">You are on the waiting list.</p>
           <?php elseif ($left > 0): ?>
-            <form method="post" action="booking_action.php">
+            <form method="post" action="booking_action.php"><?= csrfField() ?>
               <input type="hidden" name="event_id" value="<?= $id ?>">
               <input type="hidden" name="action" value="book">
               <button>Join</button>
             </form>
           <?php else: ?>
-            <form method="post" action="booking_action.php">
+            <form method="post" action="booking_action.php"><?= csrfField() ?>
               <input type="hidden" name="event_id" value="<?= $id ?>">
               <input type="hidden" name="action" value="wait">
               <button>Join waiting list</button>

@@ -12,4 +12,10 @@ return [
     'db_ssl_ca' => '/absolute/path/to/ca.pem',
     'db_ssl_verify' => true,
     'base_url' => 'http://localhost/eventlink',
+    // Local HTTP: false. Production HTTPS (including TLS proxies): true.
+    'session_secure' => false,
+    'session_idle_timeout' => 1800,
+    'session_absolute_timeout' => 28800,
+    // Enable only after HTTPS is working for the whole site.
+    'hsts_max_age' => 0,
 ];
