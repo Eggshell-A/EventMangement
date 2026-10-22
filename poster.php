@@ -24,5 +24,6 @@ require __DIR__ . '/includes/header.php';
   <p class="poster-url"><?= e($eventUrl) ?></p>
   <p class="poster-organiser">Created by <?= e($event['organiser_name']) ?></p>
 </article>
-<p class="no-print"><button type="button" onclick="window.print()">Print A4 poster</button></p>
+<p class="no-print"><button type="button" id="print-poster">Print A4 poster</button></p>
+<script src="assets/print.js" defer></script>
 <?php require __DIR__ . '/includes/footer.php'; ?>
