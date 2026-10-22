@@ -28,7 +28,7 @@ require __DIR__ . '/includes/header.php';
           <?php if ($event['status'] === 'approved'): ?>
             <a class="action-btn print" href="poster.php?id=<?= (int) $event['event_id'] ?>">Print poster</a>
           <?php else: ?>
-            <span class="action-btn print is-off">Print poster</span>
+            <a class="action-btn print" href="photo.php?id=<?= (int) $event['event_id'] ?>">Print poster</a>
           <?php endif; ?>
         </div>
       </li>
