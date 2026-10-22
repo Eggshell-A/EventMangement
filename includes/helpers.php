@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/role_access.php';
-function e(?string $value): string { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
+function e(?string $value): string { return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 function isLoggedIn(): bool { return isset($_SESSION['user']); }
 function currentUser(): ?array { return $_SESSION['user'] ?? null; }
 function isRole(string $role): bool { return isLoggedIn() && currentUser()['role'] === $role; }
@@ -32,8 +32,8 @@ function canEditEvent(PDO $pdo, array $event): bool {
     }
     return staffAssistsCreator($pdo, (int) $event['organiser_id']);
 }
-function safeEventNext(?string $value): ?string {
-    if ($value !== null && preg_match('/^event\.php\?id=([1-9][0-9]*)$/', $value, $match)) {
+function safeEventNext(mixed $value): ?string {
+    if (is_string($value) && preg_match('/^event\.php\?id=([1-9][0-9]*)$/', $value, $match)) {
         return 'event.php?id=' . $match[1];
     }
     return null;

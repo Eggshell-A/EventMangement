@@ -3,7 +3,7 @@
   "description": "EventLink university event management MVP",
   "type": "project",
   "require": {
-    "php": "^8.0",
+    "php": "^8.1",
     "chillerlan/php-qrcode": "^5.0"
   },
   "config": {

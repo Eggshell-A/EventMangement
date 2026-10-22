@@ -10,7 +10,8 @@ Guarded scripts call `requireRole` before they read or change data. A missing se
 
 | Script | Allowed roles |
 |---|---|
-| `dashboard.php`, `event_form.php`, `organiser_action.php` | creator |
+| `dashboard.php`, `organiser_action.php` | creator |
+| `event_form.php` | creator; staff for an assigned creator’s existing event |
 | `staff.php` | staff |
 | `admin.php`, `admin_action.php` | admin |
 | `my_bookings.php`, `booking_action.php`, `cancel_booking.php` | user |
@@ -23,10 +24,10 @@ Guarded scripts call `requireRole` before they read or change data. A missing se
 
 Creator pages filter events with `events.organiser_id` equal to the current user id. The column name stays `organiser_id`. `isEventOwnerOrAdmin` is true for an admin, or for a creator who owns that event.
 
-Staff pages join `staff_assignments` and keep rows whose `staff_user_id` is the current user. Staff do not get the creator dashboard, the event form, or the admin queue.
+Staff pages join `staff_assignments` and keep rows whose `staff_user_id` is the current user. Assigned staff can edit existing events through the event form. Staff cannot create events or open the creator dashboard or admin queue. Assignment checks run again when an edit is saved.
 
-Admin is the only role on `admin.php` and `admin_action.php`. The user table on the admin page is read-only.
+Admin is the only role on `admin.php` and `admin_action.php`. Admin can verify a pending school email. User verification and the creator-plan update are transactional.
 
-## Not in this week
+## Security restoration — 22 October 2026
 
-CSRF protection is not done. Rate limits are not done. Session timeout is not done.
+All bootstrapped POST requests now require a CSRF token. Authentication uses persistent rate limits, secure session cookies, rotation and idle/absolute expiry. Roles refresh from the database on each request. See [the current security release](../SECURITY_RELEASE.md) and [verification report](../TESTING.md).
