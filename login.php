@@ -43,16 +43,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $pageTitle = 'Log in';
 require __DIR__ . '/includes/header.php';
 ?>
-<h1>Log in</h1>
-<?php if ($next): ?><p class="notice">Log in to join this event. You will come back to it afterwards.</p><?php endif; ?>
-<form method="post">
-<?= csrfField() ?>
-<?php if ($error): ?><p class="flash error"><?= e($error) ?></p><?php endif; ?>
-<?php if ($next): ?><input type="hidden" name="next" value="<?= e($next) ?>"><?php endif; ?>
-<label for="email">Email</label>
-<input id="email" type="email" name="email" required autocomplete="email" value="<?= e($_POST['email'] ?? '') ?>">
-<label for="password">Password</label>
-<input id="password" type="password" name="password" required autocomplete="current-password">
-<div class="form-actions"><button>Log in</button></div>
-</form>
+<section class="auth-shell">
+  <div class="auth-intro">
+    <p class="kicker">Welcome back</p>
+    <h1>Pick up where you left off.</h1>
+    <p>User accounts manage reservations. Creator, Staff, and Admin accounts open their own workspaces after login.</p>
+    <p class="auth-switch">New to Fairboard? <a href="register.php">Create an account</a></p>
+  </div>
+  <form method="post" class="auth-card">
+    <?= csrfField() ?>
+    <h2>Log in</h2>
+    <?php if ($next): ?><p class="notice">Log in to reserve this event. You will return to it afterwards.</p><?php endif; ?>
+    <?php if ($error): ?><p class="flash error" role="alert"><?= e($error) ?></p><?php endif; ?>
+    <?php if ($next): ?><input type="hidden" name="next" value="<?= e($next) ?>"><?php endif; ?>
+    <label for="email">Email</label>
+    <input id="email" type="email" name="email" required autocomplete="email" value="<?= e($_POST['email'] ?? '') ?>">
+    <label for="password">Password</label>
+    <input id="password" type="password" name="password" required autocomplete="current-password">
+    <div class="form-actions"><button type="submit">Log in</button></div>
+  </form>
+</section>
 <?php require __DIR__ . '/includes/footer.php';

@@ -13,16 +13,8 @@ $left = max(0, (int) $event['capacity'] - (int) $event['booking_count']);
 $pageTitle = 'Booking confirmed';
 require __DIR__ . '/includes/header.php';
 ?>
-<article class="success-panel">
-  <p class="kicker">Booking confirmed</p>
-  <h1><?= e($event['title']) ?></h1>
-  <p><?= e(date('l j F Y, H:i', strtotime($event['start_time']))) ?><br><?= e($event['location']) ?></p>
-  <p class="places-line"><strong><?= $left ?></strong> <?= $left === 1 ? 'place' : 'places' ?> left after your booking.</p>
-  <img class="booking-qr" src="qr.php?id=<?= $id ?>" alt="QR code for the event page">
-  <p class="muted">Keep this confirmation handy. Event staff can also find you by name at check-in.</p>
-  <div class="form-actions">
-    <a class="button" href="my_bookings.php">My bookings</a>
-    <a class="button ghost" href="event.php?id=<?= $id ?>">Back to the event</a>
-  </div>
+<article class="success-panel ticket-panel">
+  <div class="ticket-main"><p class="kicker">Place confirmed</p><h1><?= e($event['title']) ?></h1><dl class="event-facts"><div><dt>When</dt><dd><?= e(date('l j F Y, H:i', strtotime($event['start_time']))) ?></dd></div><div><dt>Where</dt><dd><?= e($event['location']) ?></dd></div><div><dt>Availability</dt><dd><?= $left ?> <?= $left === 1 ? 'place' : 'places' ?> left after your reservation</dd></div></dl><p class="muted">Your place also appears under My activity. Cancel there if your plans change so someone else can attend.</p><div class="form-actions"><a class="button" href="my_bookings.php">Open My activity</a><a class="button ghost" href="event.php?id=<?= $id ?>">Event details</a></div></div>
+  <div class="ticket-stub"><img class="booking-qr" src="qr.php?id=<?= $id ?>" alt="QR code opening the event page"><strong>Event page</strong><span>Keep the details handy</span></div>
 </article>
 <?php require __DIR__ . '/includes/footer.php';

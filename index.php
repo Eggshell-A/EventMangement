@@ -61,21 +61,15 @@ require __DIR__ . '/includes/header.php';
       <?php foreach ($events as $event): $left = placesLeft($event); ?>
         <li>
           <a class="poster-card" href="event.php?id=<?= (int) $event['event_id'] ?>">
-            <?php if (!$filters['low_data']): ?>
-              <?php if (!empty($event['poster_path'])): ?>
-                <img class="event-image" src="<?= e($event['poster_path']) ?>" alt="">
-              <?php else: ?>
-                <span class="poster tone-<?= posterTone($event['title']) ?>" aria-hidden="true"><?= e(mb_substr($event['title'], 0, 1)) ?></span>
-              <?php endif; ?>
-            <?php endif; ?>
+            <span class="event-date-ticket"><strong><?= e(date('d', strtotime($event['start_time']))) ?></strong><span><?= e(strtoupper(date('M', strtotime($event['start_time'])))) ?></span><small><?= e(date('D', strtotime($event['start_time']))) ?></small></span>
             <span class="poster-meta">
-              <span class="event-date-ticket"><strong><?= e(date('d', strtotime($event['start_time']))) ?></strong><?= e(strtoupper(date('M', strtotime($event['start_time'])))) ?></span>
               <span class="category-label"><?= e(eventCategories()[$event['category']] ?? eventCategories()['other']) ?></span>
               <strong><?= e($event['title']) ?></strong>
               <span><?= e(organisationName($event)) ?></span>
-              <span><?= e(date('D j M, H:i', strtotime($event['start_time']))) ?> · <?= e($event['location']) ?></span>
+              <span class="card-meta"><?= e(date('H:i', strtotime($event['start_time']))) ?><span aria-hidden="true"> / </span><?= e($event['location']) ?></span>
               <span class="places<?= $left === 0 ? ' full' : '' ?>"><?= $left === 0 ? ((int) $event['waiting_count'] . ' waiting') : $left . ' places left' ?></span>
             </span>
+            <?php if (!$filters['low_data'] && !empty($event['poster_path'])): ?><img class="event-card-thumb" src="<?= e($event['poster_path']) ?>" alt=""><?php endif; ?>
           </a>
         </li>
       <?php endforeach; ?>

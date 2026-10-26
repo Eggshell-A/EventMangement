@@ -42,9 +42,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $pageTitle = 'Register';
 require __DIR__ . '/includes/header.php';
 ?>
-<h1>Create an account</h1>
-<form method="post" novalidate>
+<section class="auth-shell">
+<div class="auth-intro">
+  <p class="kicker">Join Fairboard</p>
+  <h1>Find events or start organising.</h1>
+  <p>Choose User to reserve events. Choose Event creator to publish and manage events for a society or community group.</p>
+  <p class="auth-switch">Already registered? <a href="login.php">Log in</a></p>
+</div>
+<form method="post" novalidate class="auth-card">
   <?= csrfField() ?>
+  <h2>Create an account</h2>
   <?php foreach ($errors as $error): ?>
     <p class="flash error"><?= e($error) ?></p>
   <?php endforeach; ?>
@@ -60,6 +67,7 @@ require __DIR__ . '/includes/header.php';
     <option value="user" <?= ($_POST['role'] ?? 'user') === 'user' ? 'selected' : '' ?>>User</option>
     <option value="creator" <?= ($_POST['role'] ?? '') === 'creator' ? 'selected' : '' ?>>Event creator</option>
   </select>
-  <div class="form-actions"><button>Create account</button></div>
+  <div class="form-actions"><button type="submit">Create account</button></div>
 </form>
+</section>
 <?php require __DIR__ . '/includes/footer.php';
