@@ -5,6 +5,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     exit('Method not allowed.');
 }
+requireValidCsrf();
 $id = (int) ($_POST['event_id'] ?? 0);
 $action = $_POST['action'] ?? '';
 $userId = (int) currentUser()['user_id'];

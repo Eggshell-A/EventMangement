@@ -5,6 +5,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     exit('Method not allowed.');
 }
+requireValidCsrf();
 $action = $_POST['action'] ?? '';
 if ($action === 'verify_school') {
     $userId = (int) ($_POST['user_id'] ?? 0);

@@ -22,6 +22,7 @@ if (isset($_GET['id'])) {
     exit('Staff can edit an assigned event, not create a new one.');
 }
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireValidCsrf();
     $id = (int) ($_POST['event_id'] ?? 0);
     if ($id) {
         $statement = $pdo->prepare('SELECT * FROM events WHERE event_id = ?');
@@ -71,6 +72,7 @@ $values = $_POST ?: ($event ?: []);
 <?php if (!$event): ?><p class="notice">New events are pending until an admin approves them.</p><?php endif; ?>
 <?php if ($event && isRole('staff')): ?><p class="notice">You are editing this event for the assigned creator.</p><?php endif; ?>
 <form method="post">
+<?= csrfField() ?>
 <?php if ($event): ?><input type="hidden" name="event_id" value="<?= (int) $event['event_id'] ?>"><?php endif; ?>
 <?php foreach ($errors as $error): ?><p class="flash error"><?= e($error) ?></p><?php endforeach; ?>
 <label for="title">Event title</label>

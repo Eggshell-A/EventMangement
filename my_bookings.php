@@ -20,6 +20,7 @@ require __DIR__ . '/includes/header.php';
           <p><?= $booking['checked_in'] ? 'Checked in' : 'Confirmed' ?></p>
         </div>
         <form method="post" action="cancel_booking.php">
+          <?= csrfField() ?>
           <input type="hidden" name="booking_id" value="<?= (int) $booking['booking_id'] ?>">
           <button class="danger" type="submit">Cancel booking</button>
         </form>

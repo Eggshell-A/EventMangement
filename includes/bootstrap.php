@@ -1,9 +1,16 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/security.php';
+configureSessionCookies();
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
+if (isset($_SESSION['user']) && sessionIsExpired($_SESSION)) {
+    $_SESSION = [];
+    $_SESSION['flash'][] = ['message' => 'Your session expired. Please log in again.', 'type' => 'error'];
+}
+touchSession();
 
 $configPath = __DIR__ . '/../config.php';
 if (!file_exists($configPath)) {
@@ -40,3 +47,14 @@ try {
 }
 
 require_once __DIR__ . '/helpers.php';
+
+if (isset($_SESSION['user']['user_id'])) {
+    $activeStatement = $pdo->prepare('SELECT is_active FROM users WHERE user_id = ?');
+    $activeStatement->execute([(int) $_SESSION['user']['user_id']]);
+    $account = $activeStatement->fetch();
+    if (!$account || !accountIsActive($account)) {
+        $_SESSION = [];
+        $_SESSION['flash'][] = ['message' => 'This account is not active.', 'type' => 'error'];
+        touchSession();
+    }
+}

@@ -5,6 +5,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     exit('Method not allowed.');
 }
+requireValidCsrf();
 $bookingId = (int) ($_POST['booking_id'] ?? 0);
 $userId = (int) currentUser()['user_id'];
 try {

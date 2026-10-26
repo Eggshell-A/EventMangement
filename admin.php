@@ -20,9 +20,9 @@ require __DIR__ . '/includes/header.php';
       <td><strong><?= e($event['title']) ?></strong><br><?= e(date('j M Y, H:i', strtotime($event['start_time']))) ?><br><?= e($event['location']) ?></td>
       <td><?= e($event['organiser_name']) ?></td>
       <td class="no-print"><div class="actions">
-        <form method="post" action="admin_action.php"><input type="hidden" name="event_id" value="<?= (int) $event['event_id'] ?>"><input type="hidden" name="action" value="approve"><button>Approve</button></form>
-        <form method="post" action="admin_action.php"><input type="hidden" name="event_id" value="<?= (int) $event['event_id'] ?>"><input type="hidden" name="action" value="reject"><button class="danger">Reject</button></form>
-        <form method="post" action="admin_action.php"><input type="hidden" name="event_id" value="<?= (int) $event['event_id'] ?>"><input type="hidden" name="action" value="remove"><button class="danger">Remove</button></form>
+        <form method="post" action="admin_action.php"><?= csrfField() ?><input type="hidden" name="event_id" value="<?= (int) $event['event_id'] ?>"><input type="hidden" name="action" value="approve"><button>Approve</button></form>
+        <form method="post" action="admin_action.php"><?= csrfField() ?><input type="hidden" name="event_id" value="<?= (int) $event['event_id'] ?>"><input type="hidden" name="action" value="reject"><button class="danger">Reject</button></form>
+        <form method="post" action="admin_action.php"><?= csrfField() ?><input type="hidden" name="event_id" value="<?= (int) $event['event_id'] ?>"><input type="hidden" name="action" value="remove"><button class="danger">Remove</button></form>
       </div></td>
     </tr>
   <?php endforeach; ?>
@@ -34,7 +34,7 @@ require __DIR__ . '/includes/header.php';
   <tr>
     <td><?= e($event['title']) ?></td>
     <td><span class="status <?= e($event['status']) ?>"><?= e($event['status']) ?></span></td>
-    <td class="no-print"><form method="post" action="admin_action.php"><input type="hidden" name="event_id" value="<?= (int) $event['event_id'] ?>"><input type="hidden" name="action" value="remove"><button class="danger">Remove</button></form></td>
+    <td class="no-print"><form method="post" action="admin_action.php"><?= csrfField() ?><input type="hidden" name="event_id" value="<?= (int) $event['event_id'] ?>"><input type="hidden" name="action" value="remove"><button class="danger">Remove</button></form></td>
   </tr>
 <?php endforeach; ?>
 </tbody></table></div>
@@ -49,6 +49,7 @@ require __DIR__ . '/includes/header.php';
     <td class="no-print">
       <?php if ((int) $person['is_school_email'] === 1 && (int) $person['school_email_verified'] === 0): ?>
         <form method="post" action="admin_action.php">
+          <?= csrfField() ?>
           <input type="hidden" name="action" value="verify_school">
           <input type="hidden" name="user_id" value="<?= (int) $person['user_id'] ?>">
           <button type="submit">Verify school email</button>

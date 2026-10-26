@@ -20,6 +20,7 @@
         <?php if (isRole('staff')): ?><a href="staff.php">Staff</a><?php endif; ?>
         <?php if (isRole('admin')): ?><a href="admin.php">Admin</a><?php endif; ?>
         <form class="inline-form" method="post" action="logout.php">
+          <?= csrfField() ?>
           <button class="nav-logout" type="submit">Log out</button>
         </form>
       <?php else: ?>
