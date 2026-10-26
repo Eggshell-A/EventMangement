@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/role_access.php';
 require_once __DIR__ . '/event_access.php';
+require_once __DIR__ . '/booking_policy.php';
 function e(?string $value): string { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
 function isLoggedIn(): bool { return isset($_SESSION['user']); }
 function currentUser(): ?array { return $_SESSION['user'] ?? null; }
@@ -43,7 +44,7 @@ function planFeeLabel(?string $plan): string {
 }
 function posterTone(string $title): int { return (int) (abs(crc32($title)) % 6); }
 function eventCardSql(): string {
-    return 'SELECT e.event_id, e.organiser_id, e.title, e.description, e.start_time, e.location, e.capacity, e.status, u.name AS organiser_name, p.organisation_name, p.plan_code, (SELECT COUNT(*) FROM bookings b WHERE b.event_id = e.event_id) AS booking_count, (SELECT COUNT(*) FROM waiting_list w WHERE w.event_id = e.event_id) AS waiting_count FROM events e JOIN users u ON u.user_id = e.organiser_id LEFT JOIN creator_plans p ON p.user_id = e.organiser_id';
+    return 'SELECT e.event_id, e.organiser_id, e.title, e.description, e.start_time, e.location, e.capacity, e.original_capacity, e.refill_count, e.status, u.name AS organiser_name, p.organisation_name, p.plan_code, (SELECT COUNT(*) FROM bookings b WHERE b.event_id = e.event_id) AS booking_count, (SELECT COUNT(*) FROM waiting_list w WHERE w.event_id = e.event_id) AS waiting_count FROM events e JOIN users u ON u.user_id = e.organiser_id LEFT JOIN creator_plans p ON p.user_id = e.organiser_id';
 }
 function placesLeft(array $event): int { return max(0, (int) $event['capacity'] - (int) $event['booking_count']); }
 function organisationName(array $event): string {

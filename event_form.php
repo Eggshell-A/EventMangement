@@ -57,8 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash('Event updated.');
             redirect(isRole('staff') ? 'staff.php' : 'dashboard.php');
         }
-        $statement = $pdo->prepare("INSERT INTO events (organiser_id, title, description, start_time, location, capacity, status) VALUES (?,?,?,?,?,?,'pending')");
-        $statement->execute([currentUser()['user_id'], $title, $description, date('Y-m-d H:i:s', strtotime($start)), $location, $capacity]);
+        $statement = $pdo->prepare("INSERT INTO events (organiser_id, title, description, start_time, location, capacity, original_capacity, status) VALUES (?,?,?,?,?,?,?,'pending')");
+        $statement->execute([currentUser()['user_id'], $title, $description, date('Y-m-d H:i:s', strtotime($start)), $location, $capacity, $capacity]);
         flash('Event created and submitted for approval.');
         redirect('dashboard.php');
     }

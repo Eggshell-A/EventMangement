@@ -62,6 +62,8 @@ CREATE TABLE events (
   start_time DATETIME NOT NULL,
   location VARCHAR(200) NOT NULL,
   capacity INT UNSIGNED NOT NULL,
+  original_capacity INT UNSIGNED NOT NULL,
+  refill_count INT UNSIGNED NOT NULL DEFAULT 0,
   status ENUM('pending','approved','rejected','removed') NOT NULL DEFAULT 'pending',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

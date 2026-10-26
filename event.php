@@ -10,16 +10,17 @@ if (!$event || !eventIsAccessible($event)) {
 }
 $left = placesLeft($event);
 $fee = planFeeLabel($event['plan_code'] ?? null);
-$alreadyBooked = false;
-$alreadyWaiting = false;
+$booking = null;
+$waiting = null;
 if (isLoggedIn()) {
-    $statement = $pdo->prepare('SELECT 1 FROM bookings WHERE event_id = ? AND user_id = ?');
+    $statement = $pdo->prepare('SELECT booking_id, checked_in FROM bookings WHERE event_id = ? AND user_id = ?');
     $statement->execute([$id, currentUser()['user_id']]);
-    $alreadyBooked = (bool) $statement->fetchColumn();
-    $statement = $pdo->prepare('SELECT 1 FROM waiting_list WHERE event_id = ? AND user_id = ?');
+    $booking = $statement->fetch() ?: null;
+    $statement = $pdo->prepare('SELECT entry_id, joined_at FROM waiting_list WHERE event_id = ? AND user_id = ?');
     $statement->execute([$id, currentUser()['user_id']]);
-    $alreadyWaiting = (bool) $statement->fetchColumn();
+    $waiting = $statement->fetch() ?: null;
 }
+$state = bookingState($event, $booking, $waiting);
 $next = 'event.php?id=' . $id;
 $pageTitle = $event['title'];
 require __DIR__ . '/includes/header.php';
@@ -39,24 +40,26 @@ require __DIR__ . '/includes/header.php';
           <a class="button" href="login.php?next=<?= e($next) ?>">Join</a>
           <p class="muted">You need to log in before joining.</p>
         <?php elseif (isRole('user')): ?>
-          <?php if ($alreadyBooked): ?>
+          <?php if ($state === 'booked'): ?>
             <p class="notice">You have a place. <a href="booked.php?id=<?= $id ?>">View your booking</a></p>
-          <?php elseif ($alreadyWaiting): ?>
-            <p class="notice">You are on the waiting list.</p>
-          <?php elseif ($left > 0): ?>
+          <?php elseif ($state === 'waiting'): ?>
+            <p class="notice">You are on Fairboard’s waiting list. Your place in line is kept by join time.</p>
+          <?php elseif ($state === 'available'): ?>
             <form method="post" action="booking_action.php">
               <?= csrfField() ?>
               <input type="hidden" name="event_id" value="<?= $id ?>">
               <input type="hidden" name="action" value="book">
               <button>Join</button>
             </form>
-          <?php else: ?>
+          <?php elseif ($state === 'waitlist'): ?>
             <form method="post" action="booking_action.php">
               <?= csrfField() ?>
               <input type="hidden" name="event_id" value="<?= $id ?>">
               <input type="hidden" name="action" value="wait">
               <button>Join waiting list</button>
             </form>
+          <?php else: ?>
+            <p class="notice">Booking is not available for this event.</p>
           <?php endif; ?>
         <?php else: ?>
           <p class="notice">Log in with a user account to join this event.</p>

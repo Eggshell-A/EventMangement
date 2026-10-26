@@ -18,6 +18,8 @@ require __DIR__ . '/includes/header.php';
   <h1><?= e($event['title']) ?></h1>
   <p><?= e(date('l j F Y, H:i', strtotime($event['start_time']))) ?><br><?= e($event['location']) ?></p>
   <p class="places-line"><strong><?= $left ?></strong> <?= $left === 1 ? 'place' : 'places' ?> left after your booking.</p>
+  <img class="booking-qr" src="qr.php?id=<?= $id ?>" alt="QR code for the event page">
+  <p class="muted">Keep this confirmation handy. Event staff can also find you by name at check-in.</p>
   <div class="form-actions">
     <a class="button" href="my_bookings.php">My bookings</a>
     <a class="button ghost" href="event.php?id=<?= $id ?>">Back to the event</a>
