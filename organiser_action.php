@@ -27,8 +27,8 @@ if (isset($_POST['add_places'])) {
         flash('Places added.');
     }
 } elseif (($_POST['action'] ?? '') === 'cancel') {
-    $pdo->prepare("UPDATE events SET status = 'removed' WHERE event_id = ?")->execute([$id]);
-    flash('Event cancelled and removed from public pages.');
+    $pdo->prepare("UPDATE events SET status = 'cancelled' WHERE event_id = ?")->execute([$id]);
+    flash('Event cancelled and kept in your history.');
 } else {
     http_response_code(400);
     exit('Invalid action.');

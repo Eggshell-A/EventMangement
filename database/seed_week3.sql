@@ -45,33 +45,33 @@ INSERT INTO creator_plans (user_id, organisation_name, plan_code)
 SELECT user_id, 'Unverified Society', 'external_monthly' FROM users WHERE email = 'unverified@fairboard.test'
 AND NOT EXISTS (SELECT 1 FROM creator_plans p JOIN users u ON u.user_id = p.user_id WHERE u.email = 'unverified@fairboard.test');
 
-INSERT INTO events (organiser_id, title, description, start_time, location, capacity, original_capacity, status)
-SELECT u.user_id, 'Campus Acoustic Night', 'An evening of student bands and solo sets in the union hall. Doors open half an hour before the first act. One place per person.', '2026-11-07 19:00:00', 'Student Union Hall', 80, 80, 'approved'
+INSERT INTO events (organiser_id, title, description, start_time, location, capacity, original_capacity, category, status)
+SELECT u.user_id, 'Campus Acoustic Night', 'An evening of student bands and solo sets in the union hall. Doors open half an hour before the first act. One place per person.', '2026-11-07 19:00:00', 'Student Union Hall', 80, 80, 'music', 'approved'
 FROM users u WHERE u.email = 'creator@fairboard.test'
 AND NOT EXISTS (SELECT 1 FROM events WHERE title = 'Campus Acoustic Night');
 
-INSERT INTO events (organiser_id, title, description, start_time, location, capacity, original_capacity, status)
-SELECT u.user_id, 'Harbour Night Market Walk', 'A guided walk through the night market with stops for street food and local makers. The group meets at the park gate. This is an external group, so the monthly label is shown and no money is collected here.', '2026-11-14 16:00:00', 'Victoria Park gate', 40, 40, 'approved'
+INSERT INTO events (organiser_id, title, description, start_time, location, capacity, original_capacity, category, status)
+SELECT u.user_id, 'Harbour Night Market Walk', 'A guided walk through the night market with stops for street food and local makers. The group meets at the park gate. This is an external group, so the monthly label is shown and no money is collected here.', '2026-11-14 16:00:00', 'Victoria Park gate', 40, 40, 'community', 'approved'
 FROM users u WHERE u.email = 'external@fairboard.test'
 AND NOT EXISTS (SELECT 1 FROM events WHERE title = 'Harbour Night Market Walk');
 
-INSERT INTO events (organiser_id, title, description, start_time, location, capacity, original_capacity, status)
-SELECT u.user_id, 'Board Game Sunday', 'Bring a game or join a table. Beginners are welcome. The session ends when the library lounge closes.', '2026-11-22 14:00:00', 'Library Lounge', 24, 24, 'approved'
+INSERT INTO events (organiser_id, title, description, start_time, location, capacity, original_capacity, category, status)
+SELECT u.user_id, 'Board Game Sunday', 'Bring a game or join a table. Beginners are welcome. The session ends when the library lounge closes.', '2026-11-22 14:00:00', 'Library Lounge', 24, 24, 'social', 'approved'
 FROM users u WHERE u.email = 'creator@fairboard.test'
 AND NOT EXISTS (SELECT 1 FROM events WHERE title = 'Board Game Sunday');
 
-INSERT INTO events (organiser_id, title, description, start_time, location, capacity, original_capacity, status)
-SELECT u.user_id, 'Community First Aid Workshop', 'A short practical session on cuts, burns, and how to call for help. Wear comfortable clothes. Places are limited so the tutor can watch each person.', '2026-11-29 10:00:00', 'Health Sciences Lab', 20, 20, 'approved'
+INSERT INTO events (organiser_id, title, description, start_time, location, capacity, original_capacity, category, status)
+SELECT u.user_id, 'Community First Aid Workshop', 'A short practical session on cuts, burns, and how to call for help. Wear comfortable clothes. Places are limited so the tutor can watch each person.', '2026-11-29 10:00:00', 'Health Sciences Lab', 20, 20, 'learning', 'approved'
 FROM users u WHERE u.email = 'creator@fairboard.test'
 AND NOT EXISTS (SELECT 1 FROM events WHERE title = 'Community First Aid Workshop');
 
-INSERT INTO events (organiser_id, title, description, start_time, location, capacity, original_capacity, status)
-SELECT u.user_id, 'Winter Film Club: Shorts', 'Four short films and a discussion afterwards. The screening starts on time. This external group shows a monthly label only.', '2026-12-05 18:30:00', 'Lecture Theatre B', 100, 100, 'approved'
+INSERT INTO events (organiser_id, title, description, start_time, location, capacity, original_capacity, category, status)
+SELECT u.user_id, 'Winter Film Club: Shorts', 'Four short films and a discussion afterwards. The screening starts on time. This external group shows a monthly label only.', '2026-12-05 18:30:00', 'Lecture Theatre B', 100, 100, 'social', 'approved'
 FROM users u WHERE u.email = 'external@fairboard.test'
 AND NOT EXISTS (SELECT 1 FROM events WHERE title = 'Winter Film Club: Shorts');
 
-INSERT INTO events (organiser_id, title, description, start_time, location, capacity, original_capacity, status)
-SELECT u.user_id, 'Charity Run Briefing', 'A full briefing for the campus charity run. This sample event is already full so the waiting list can be tried.', '2026-12-12 09:00:00', 'Sports Ground', 2, 2, 'approved'
+INSERT INTO events (organiser_id, title, description, start_time, location, capacity, original_capacity, category, status)
+SELECT u.user_id, 'Charity Run Briefing', 'A full briefing for the campus charity run. This sample event is already full so the waiting list can be tried.', '2026-12-12 09:00:00', 'Sports Ground', 2, 2, 'sports', 'approved'
 FROM users u WHERE u.email = 'creator@fairboard.test'
 AND NOT EXISTS (SELECT 1 FROM events WHERE title = 'Charity Run Briefing');
 

@@ -3,7 +3,7 @@ require __DIR__ . '/includes/bootstrap.php';
 requireRole('admin');
 $statement = $pdo->query("SELECT e.*, u.name organiser_name FROM events e JOIN users u ON u.user_id = e.organiser_id WHERE e.status = 'pending' ORDER BY e.created_at ASC");
 $pending = $statement->fetchAll();
-$statement = $pdo->query("SELECT e.*, u.name organiser_name FROM events e JOIN users u ON u.user_id = e.organiser_id WHERE e.status IN ('approved','rejected','removed') ORDER BY e.updated_at DESC LIMIT 30");
+$statement = $pdo->query("SELECT e.*, u.name organiser_name FROM events e JOIN users u ON u.user_id = e.organiser_id WHERE e.status IN ('approved','rejected','cancelled','removed') ORDER BY e.updated_at DESC LIMIT 30");
 $all = $statement->fetchAll();
 $users = $pdo->query('SELECT u.user_id, u.name, u.email, u.role, u.is_active, u.is_school_email, u.school_email_verified, p.organisation_name, p.plan_code FROM users u LEFT JOIN creator_plans p ON p.user_id = u.user_id ORDER BY u.name, u.email')->fetchAll();
 $staffAccounts = array_values(array_filter($users, fn(array $person): bool => $person['role'] === 'staff' && (int) $person['is_active'] === 1));

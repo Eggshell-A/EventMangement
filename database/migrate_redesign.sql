@@ -10,3 +10,11 @@ ALTER TABLE events
 
 UPDATE events SET original_capacity = capacity WHERE original_capacity IS NULL OR original_capacity = 0;
 ALTER TABLE events MODIFY original_capacity INT UNSIGNED NOT NULL;
+
+ALTER TABLE events
+  ADD COLUMN IF NOT EXISTS category ENUM('music','community','learning','sports','social','other') NOT NULL DEFAULT 'other' AFTER refill_count,
+  ADD COLUMN IF NOT EXISTS poster_path VARCHAR(255) NULL AFTER category,
+  ADD COLUMN IF NOT EXISTS social_url VARCHAR(500) NULL AFTER poster_path;
+
+ALTER TABLE events
+  MODIFY status ENUM('draft','pending','approved','rejected','cancelled','removed') NOT NULL DEFAULT 'draft';
