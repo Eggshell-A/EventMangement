@@ -16,6 +16,8 @@ function guardedPages(): array
     return [
         'dashboard.php' => ['creator'],
         'event_form.php' => ['creator', 'staff'],
+        'attendees.php' => ['creator', 'staff'],
+        'checkin.php' => ['creator', 'staff'],
         'organiser_action.php' => ['creator'],
         'staff.php' => ['staff'],
         'admin.php' => ['admin'],

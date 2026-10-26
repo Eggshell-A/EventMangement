@@ -13,7 +13,7 @@ if (isset($_GET['id'])) {
     $statement = $pdo->prepare('SELECT * FROM events WHERE event_id = ?');
     $statement->execute([(int) $_GET['id']]);
     $event = $statement->fetch();
-    if (!$event || !canEditEvent($pdo, $event)) {
+    if (!$event || !currentUserCanEditEvent($pdo, $event)) {
         http_response_code(403);
         exit('You cannot edit this event.');
     }
@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $statement = $pdo->prepare('SELECT * FROM events WHERE event_id = ?');
         $statement->execute([$id]);
         $event = $statement->fetch();
-        if (!$event || !canEditEvent($pdo, $event)) {
+        if (!$event || !currentUserCanEditEvent($pdo, $event)) {
             http_response_code(403);
             exit('You cannot edit this event.');
         }

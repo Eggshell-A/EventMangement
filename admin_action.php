@@ -7,6 +7,36 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 requireValidCsrf();
 $action = $_POST['action'] ?? '';
+if ($action === 'assign_staff') {
+    $staffUserId = (int) ($_POST['staff_user_id'] ?? 0);
+    $creatorUserId = (int) ($_POST['creator_user_id'] ?? 0);
+    if (!assignStaffToCreator($pdo, $staffUserId, $creatorUserId)) {
+        flash('That assignment could not be created. Check the roles or existing assignments.', 'error');
+    } else {
+        flash('Staff assignment created.');
+    }
+    redirect('admin.php#assignments');
+}
+if ($action === 'unassign_staff') {
+    $staffUserId = (int) ($_POST['staff_user_id'] ?? 0);
+    $creatorUserId = (int) ($_POST['creator_user_id'] ?? 0);
+    if (!unassignStaffFromCreator($pdo, $staffUserId, $creatorUserId)) {
+        flash('That assignment no longer exists.', 'error');
+    } else {
+        flash('Staff assignment removed.');
+    }
+    redirect('admin.php#assignments');
+}
+if ($action === 'toggle_account') {
+    $targetUserId = (int) ($_POST['user_id'] ?? 0);
+    $active = ($_POST['active'] ?? '') === '1';
+    if (!setAccountActive($pdo, (int) currentUser()['user_id'], $targetUserId, $active)) {
+        flash('That account status could not be changed.', 'error');
+    } else {
+        flash($active ? 'Account reactivated.' : 'Account disabled.');
+    }
+    redirect('admin.php#accounts');
+}
 if ($action === 'verify_school') {
     $userId = (int) ($_POST['user_id'] ?? 0);
     $statement = $pdo->prepare('SELECT user_id FROM users WHERE user_id = ? AND is_school_email = 1 AND school_email_verified = 0');

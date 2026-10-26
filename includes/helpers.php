@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/role_access.php';
+require_once __DIR__ . '/event_access.php';
 function e(?string $value): string { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
 function isLoggedIn(): bool { return isset($_SESSION['user']); }
 function currentUser(): ?array { return $_SESSION['user'] ?? null; }
@@ -17,21 +18,8 @@ function eventCapacityInfo(PDO $pdo, int $eventId): array {
     $statement->execute([$eventId]); $waiting = (int) $statement->fetchColumn();
     return ['bookings' => $bookings, 'waiting' => $waiting];
 }
-function isEventOwnerOrAdmin(array $event): bool { return isRole('admin') || (isRole('creator') && (int) currentUser()['user_id'] === (int) $event['organiser_id']); }
-function staffAssistsCreator(PDO $pdo, int $creatorId): bool {
-    if (!isRole('staff')) {
-        return false;
-    }
-    $statement = $pdo->prepare('SELECT 1 FROM staff_assignments WHERE staff_user_id = ? AND creator_user_id = ?');
-    $statement->execute([(int) currentUser()['user_id'], $creatorId]);
-    return (bool) $statement->fetchColumn();
-}
-function canEditEvent(PDO $pdo, array $event): bool {
-    if (isRole('creator') && (int) currentUser()['user_id'] === (int) $event['organiser_id']) {
-        return true;
-    }
-    return staffAssistsCreator($pdo, (int) $event['organiser_id']);
-}
+function currentUserCanEditEvent(PDO $pdo, array $event): bool { return isLoggedIn() && canEditEvent($pdo, currentUser(), $event); }
+function currentUserCanManageAttendees(PDO $pdo, array $event): bool { return isLoggedIn() && canManageAttendees($pdo, currentUser(), $event); }
 function safeEventNext(?string $value): ?string {
     if ($value !== null && preg_match('/^event\.php\?id=([1-9][0-9]*)$/', $value, $match)) {
         return 'event.php?id=' . $match[1];

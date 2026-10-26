@@ -2,12 +2,15 @@
 declare(strict_types=1);
 
 require __DIR__ . '/includes/bootstrap.php';
-requireLogin();
+if (!isLoggedIn() || !pageAllowed(currentUser(), 'attendees.php')) {
+    http_response_code(isLoggedIn() ? 403 : 401);
+    exit(isLoggedIn() ? 'You do not have permission to access this page.' : 'Please log in to continue.');
+}
 $id = (int) ($_GET['event_id'] ?? 0);
 $statement = $pdo->prepare('SELECT * FROM events WHERE event_id = ?');
 $statement->execute([$id]);
 $event = $statement->fetch();
-if (!$event || !isEventOwnerOrAdmin($event)) {
+if (!$event || !currentUserCanManageAttendees($pdo, $event)) {
     http_response_code(403);
     exit('You cannot view this attendee list.');
 }

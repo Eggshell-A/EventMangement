@@ -1,10 +1,10 @@
 <?php
 require __DIR__ . '/includes/bootstrap.php';
 $id = (int) ($_GET['id'] ?? 0);
-$statement = $pdo->prepare("SELECT e.*, u.name AS organiser_name FROM events e JOIN users u ON u.user_id = e.organiser_id WHERE e.event_id = ? AND e.status = 'approved'");
+$statement = $pdo->prepare('SELECT e.*, u.name AS organiser_name FROM events e JOIN users u ON u.user_id = e.organiser_id WHERE e.event_id = ?');
 $statement->execute([$id]);
 $event = $statement->fetch();
-if (!$event) {
+if (!$event || ($event['status'] !== 'approved' && !currentUserCanEditEvent($pdo, $event))) {
     http_response_code(404);
     exit('Event not found.');
 }

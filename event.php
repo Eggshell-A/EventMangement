@@ -65,7 +65,7 @@ require __DIR__ . '/includes/header.php';
     <?php else: ?>
       <p class="status <?= e($event['status']) ?>"><?= e($event['status']) ?></p>
     <?php endif; ?>
-    <?php if (isEventOwnerOrAdmin($event)): ?>
+    <?php if (currentUserCanManageAttendees($pdo, $event)): ?>
       <p class="no-print"><a class="button" href="attendees.php?event_id=<?= $id ?>">View attendee list</a></p>
     <?php endif; ?>
   </div>

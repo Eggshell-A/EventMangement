@@ -12,7 +12,7 @@ require __DIR__ . '/includes/header.php';
 <?php if (!$events): ?><p class="notice">No events are assigned to you.</p><?php else: ?>
 <table><thead><tr><th>Event</th><th>Creator</th><th>Status</th><th class="no-print">Assist</th></tr></thead><tbody>
 <?php foreach ($events as $event): ?>
-<tr><td><strong><?= e($event['title']) ?></strong><br><span class="muted"><?= e(date('j M Y, H:i', strtotime($event['start_time']))) ?> · <?= e($event['location']) ?></span></td><td><?= e($event['creator_name']) ?></td><td><span class="status <?= e($event['status']) ?>"><?= e($event['status']) ?></span></td><td class="no-print"><a class="action-btn edit" href="event_form.php?id=<?= (int) $event['event_id'] ?>">Edit</a></td></tr>
+<tr><td><strong><?= e($event['title']) ?></strong><br><span class="muted"><?= e(date('j M Y, H:i', strtotime($event['start_time']))) ?> · <?= e($event['location']) ?></span></td><td><?= e($event['creator_name']) ?></td><td><span class="status <?= e($event['status']) ?>"><?= e($event['status']) ?></span></td><td class="no-print"><div class="event-actions"><a class="action-btn edit" href="event_form.php?id=<?= (int) $event['event_id'] ?>">Edit</a><a class="action-btn attendees" href="attendees.php?event_id=<?= (int) $event['event_id'] ?>">Attendees & check-in</a><a class="action-btn print" href="poster.php?id=<?= (int) $event['event_id'] ?>">Promotion kit</a></div></td></tr>
 <?php endforeach; ?>
 </tbody></table>
 <?php endif; require __DIR__ . '/includes/footer.php';
