@@ -1,71 +1,10 @@
 <?php
-require __DIR__ . '/includes/bootstrap.php';
-$id = (int) ($_GET['id'] ?? 0);
-$statement = $pdo->prepare(eventCardSql() . ' WHERE e.event_id = ?');
-$statement->execute([$id]);
-$event = $statement->fetch();
-if (!$event || !eventIsAccessible($event)) {
-    http_response_code(404);
-    exit('Event not found.');
-}
-$left = placesLeft($event);
-$fee = planFeeLabel($event['plan_code'] ?? null);
-$alreadyBooked = false;
-$alreadyWaiting = false;
-if (isLoggedIn()) {
-    $statement = $pdo->prepare('SELECT 1 FROM bookings WHERE event_id = ? AND user_id = ?');
-    $statement->execute([$id, currentUser()['user_id']]);
-    $alreadyBooked = (bool) $statement->fetchColumn();
-    $statement = $pdo->prepare('SELECT 1 FROM waiting_list WHERE event_id = ? AND user_id = ?');
-    $statement->execute([$id, currentUser()['user_id']]);
-    $alreadyWaiting = (bool) $statement->fetchColumn();
-}
-$next = 'event.php?id=' . $id;
-$pageTitle = $event['title'];
-require __DIR__ . '/includes/header.php';
-?>
-<article class="detail">
-  <div class="poster tone-<?= posterTone($event['title']) ?> detail-poster" aria-hidden="true"><?= e(mb_substr($event['title'], 0, 1)) ?></div>
-  <div class="detail-copy">
-    <p class="kicker"><?= e(organisationName($event)) ?></p>
-    <h1><?= e($event['title']) ?></h1>
-    <p class="meta"><?= e(date('l j F Y, H:i', strtotime($event['start_time']))) ?><br><?= e($event['location']) ?></p>
-    <?php if ($fee !== ''): ?><p class="fee"><?= e($fee) ?></p><?php endif; ?>
-    <p><?= nl2br(e($event['description'])) ?></p>
-    <p class="places-line"><strong><?= $left ?></strong> <?= $left === 1 ? 'place' : 'places' ?> left of <?= (int) $event['capacity'] ?><?php if ((int) $event['waiting_count'] > 0): ?> · <?= (int) $event['waiting_count'] ?> waiting<?php endif; ?></p>
-    <?php if ($event['status'] === 'approved'): ?>
-      <div class="join-box no-print">
-        <?php if (!isLoggedIn()): ?>
-          <a class="button" href="login.php?next=<?= e($next) ?>">Join</a>
-          <p class="muted">You need to log in before joining.</p>
-        <?php elseif (isRole('user')): ?>
-          <?php if ($alreadyBooked): ?>
-            <p class="notice">You have a place. <a href="booked.php?id=<?= $id ?>">View your booking</a></p>
-          <?php elseif ($alreadyWaiting && $left === 0): ?>
-            <p class="notice">You are on the waiting list.</p>
-          <?php elseif ($left > 0): ?>
-            <form method="post" action="booking_action.php"><?= csrfField() ?>
-              <input type="hidden" name="event_id" value="<?= $id ?>">
-              <input type="hidden" name="action" value="book">
-              <button>Join</button>
-            </form>
-          <?php else: ?>
-            <form method="post" action="booking_action.php"><?= csrfField() ?>
-              <input type="hidden" name="event_id" value="<?= $id ?>">
-              <input type="hidden" name="action" value="wait">
-              <button>Join waiting list</button>
-            </form>
-          <?php endif; ?>
-        <?php else: ?>
-          <p class="notice">Log in with a user account to join this event.</p>
-        <?php endif; ?>
-      </div>
-    <?php else: ?>
-      <p class="status <?= e($event['status']) ?>"><?= e($event['status']) ?></p>
-    <?php endif; ?>
-    <?php if (isEventOwnerOrAdmin($event)): ?>
-      <p class="no-print"><a class="button" href="attendees.php?event_id=<?= $id ?>">View attendee list</a></p>
-    <?php endif; ?>
-  </div>
-</article>
-<?php require __DIR__ . '/includes/footer.php';
+require __DIR__.'/includes/bootstrap.php';$id=queryId();$q=$pdo->prepare(eventCardSql().' WHERE e.event_id=?');$q->execute([$id]);$event=$q->fetch();
+$booked=$waiting=false;if(isLoggedIn()){$q=$pdo->prepare('SELECT booking_id FROM bookings WHERE event_id=? AND user_id=?');$q->execute([$id,currentUser()['user_id']]);$booked=$q->fetchColumn();$q=$pdo->prepare('SELECT 1 FROM waiting_list WHERE event_id=? AND user_id=?');$q->execute([$id,currentUser()['user_id']]);$waiting=(bool)$q->fetchColumn();}
+if(!$event||(!eventIsAccessible($event)&&!canEditEvent($pdo,$event)&&!$booked&&!$waiting))abortRequest(404,'Event not found.');
+$left=placesLeft($event);$future=strtotime($event['start_time'])>time();$pageTitle=$event['title'];require __DIR__.'/includes/header.php';?>
+<p><a class="text-link" href="index.php">← Back to discover</a></p><div class="detail-hero"><img src="<?=e(eventArtwork($event))?>" alt=""><span class="pill"><?=e($event['category'])?></span></div><div class="detail-layout"><article class="detail-copy"><p class="eyebrow"><?=e(organisationName($event))?></p><h1><?=e($event['title'])?></h1><dl class="facts"><div><dt>WHEN</dt><dd><?=e(date('l j F Y · H:i',strtotime($event['start_time'])))?></dd></div><div><dt>WHERE</dt><dd><?=e($event['location'])?></dd></div></dl><h2>Here's the plan.</h2><p class="description"><?=e($event['description'])?></p><?php if(!empty($event['social_url'])&&validEventUrl($event['social_url'])):?><p><a class="button secondary" href="<?=e($event['social_url'])?>" target="_blank" rel="noopener noreferrer">Event website ↗</a></p><?php endif;?><?php if(canManageAttendees($pdo,$event)):?><p><a class="button secondary" href="attendees.php?event_id=<?=$id?>">Manage guests →</a></p><?php endif;?></article><aside class="panel booking-panel"><p class="eyebrow">SAVE YOUR SPOT</p><h2>Be part of it.</h2><p><span class="places-count"><?=$left?></span> <span class="muted">places left</span></p><p class="fine-print"><?=(int)$event['capacity']?> total places · <?=(int)$event['waiting_count']?> on the waiting list</p>
+<?php if($event['status']!=='approved'||!$future):?><p class="notice"><?=in_array($event['status'],['removed','cancelled'],true)?'This event is cancelled or no longer available.':(!$future?'Bookings are closed for this event.':'This event is awaiting approval.')?></p><?php elseif(!isLoggedIn()):?><a class="button wide" href="login.php?next=<?=rawurlencode('event.php?id='.$id)?>">Log in to join ↗</a><?php elseif(isRole('user')):?>
+<?php if($booked):?><a class="button wide" href="booked.php?id=<?=$id?>">Open your ticket ↗</a><?php elseif($waiting):?><p class="notice">You're on the list. We'll let you know here if a place opens.</p><form method="post" action="leave_waitlist.php"><?=csrfField()?><input type="hidden" name="event_id" value="<?=$id?>"><button class="secondary wide">Leave waiting list</button></form><?php else:?><form method="post" action="booking_action.php"><?=csrfField()?><input type="hidden" name="event_id" value="<?=$id?>"><input type="hidden" name="action" value="<?=$left>0?'book':'wait'?>"><button class="wide"><?=$left>0?'Book my place':'Join waiting list'?> ↗</button></form><?php endif;?>
+<?php else:?><p class="notice">Use an attendee account to book a place.</p><?php endif;?><p class="fine-print">One place per person. Joining an event does not process a payment.</p></aside></div>
+<?php require __DIR__.'/includes/footer.php';?>

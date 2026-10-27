@@ -1,29 +1,4 @@
 <?php
-require __DIR__ . '/includes/bootstrap.php';
-$id = (int) ($_GET['id'] ?? 0);
-$statement = $pdo->prepare("SELECT e.*, u.name AS organiser_name FROM events e JOIN users u ON u.user_id = e.organiser_id WHERE e.event_id = ? AND e.status = 'approved'");
-$statement->execute([$id]);
-$event = $statement->fetch();
-if (!$event) {
-    http_response_code(404);
-    exit('Event not found.');
-}
-$eventUrl = rtrim($config['base_url'], '/') . '/e.php?id=' . $id;
-$pageTitle = 'Poster: ' . $event['title'];
-$extraStylesheet = 'assets/poster.css';
-require __DIR__ . '/includes/header.php';
-?>
-<article class="poster card">
-  <p class="poster-brand">Fairboard presents</p>
-  <h1><?= e($event['title']) ?></h1>
-  <p class="poster-date"><?= e(date('l j F Y · H:i', strtotime($event['start_time']))) ?></p>
-  <p class="poster-location"><?= e($event['location']) ?></p>
-  <p class="poster-description"><?= nl2br(e($event['description'])) ?></p>
-  <img class="poster-qr" src="qr.php?id=<?= $id ?>" alt="QR code linking to the event page">
-  <p class="poster-instruction">Scan to view event details and book a place</p>
-  <p class="poster-url"><?= e($eventUrl) ?></p>
-  <p class="poster-organiser">Created by <?= e($event['organiser_name']) ?></p>
-</article>
-<p class="no-print"><button type="button" id="print-poster">Print A4 poster</button></p>
-<script src="assets/print.js" defer></script>
-<?php require __DIR__ . '/includes/footer.php'; ?>
+require __DIR__.'/includes/bootstrap.php';$id=queryId();$q=$pdo->prepare("SELECT e.*,u.name organiser_name FROM events e JOIN users u ON u.user_id=e.organiser_id WHERE e.event_id=? AND e.status='approved'");$q->execute([$id]);$event=$q->fetch();if(!$event)abortRequest(404,'Event not found.');$eventUrl=rtrim($config['base_url'],'/').'/e.php?id='.$id;$pageTitle='Event poster';$extraStylesheet='assets/poster.css';require __DIR__.'/includes/header.php';?>
+<div class="page-head no-print"><h1>Make it a date.</h1><button type="button" data-print>Print A4 poster</button></div><article class="print-poster"><img class="print-cover" src="<?=e(eventArtwork($event))?>" alt=""><div class="print-copy"><p class="eyebrow">FAIRBOARD PRESENTS · <?=e($event['category'])?></p><h1><?=e($event['title'])?></h1><p class="print-date"><?=e(date('D d M Y · H:i',strtotime($event['start_time'])))?></p><p><?=e($event['location'])?></p><p class="print-description"><?=e(mb_strimwidth($event['description'],0,450,'…'))?></p><div class="print-qr-row"><img src="qr.php?id=<?=$id?>" alt="QR code linking to event details" width="130" height="130"><div><strong>Scan. Join. Be there.</strong><p>Event details & bookings</p><small><?=e($eventUrl)?></small></div></div></div></article>
+<?php require __DIR__.'/includes/footer.php';?>

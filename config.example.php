@@ -1,21 +1,20 @@
 <?php
-// Copy this file to config.php and set the real values there. Never commit config.php.
-// Aiven uses database defaultdb, port 14574, SSL REQUIRED, and a ca.pem file.
-// Point db_ssl_ca at that ca.pem and set db_ssl_verify to true.
-// Local XAMPP can use db_name eventlink, an empty db_port, an empty db_ssl_ca, and db_ssl_verify false.
+// Copy to config.php. Never commit credentials. See README.md for XAMPP / Ubuntu.
 return [
-    'db_host' => 'your-host.example',
-    'db_port' => '14574',
-    'db_name' => 'defaultdb',
-    'db_user' => 'your-db-user',
-    'db_pass' => 'replace-with-password',
-    'db_ssl_ca' => '/absolute/path/to/ca.pem',
-    'db_ssl_verify' => true,
-    'base_url' => 'http://localhost/eventlink',
-    // Local HTTP: false. Production HTTPS (including TLS proxies): true.
-    'session_secure' => false,
-    'session_idle_timeout' => 1800,
-    'session_absolute_timeout' => 28800,
-    // Enable only after HTTPS is working for the whole site.
+    'app_env' => 'development',
+    'app_key' => '', // Generate: php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"
+    'db_host' => '127.0.0.1', 'db_port' => '3306', 'db_name' => 'eventlink',
+    'db_user' => 'eventlink', 'db_pass' => '',
+    'db_ssl_ca' => '', 'db_ssl_verify' => true,
+    'base_url' => 'http://localhost/EventMangement',
+    'timezone' => 'Asia/Hong_Kong',
+    'session_secure' => false, // true for HTTPS, including a trusted TLS reverse proxy
+    'session_idle_timeout' => 1800, 'session_absolute_timeout' => 28800,
     'hsts_max_age' => 0,
+    'enable_developer_tools' => false,
+    'developer_user_ids' => [], // Explicit admin user IDs; development environment only
+    'school_email_domains' => ['stu.vtc.edu.hk', 'vtc.edu.hk'],
+    'mail_transport' => 'log', // development: private files; production: mail with a configured MTA
+    'mail_from' => 'noreply@example.com',
+    'checkin_before_seconds' => 7200, 'checkin_after_seconds' => 43200,
 ];

@@ -1,3 +1,5 @@
+> Historical role specification. See [current release notes](RELEASE.md) for the account, society-approval and admission controls added in the completed release.
+
 # Role separation
 
 Fairboard keeps four roles apart in the database and on each request. The codes are `user`, `creator`, `staff`, and `admin`. `users.role` stores the code. The `roles` table is the lookup list. A row in that table does not grant access by itself.

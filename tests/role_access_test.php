@@ -26,6 +26,8 @@ foreach (['dashboard.php', 'event_form.php', 'staff.php', 'admin.php', 'my_booki
 
 expect(pageAllowed(account('creator'), 'dashboard.php') === true, 'creator can open dashboard.php');
 expect(pageAllowed(account('creator'), 'event_form.php') === true, 'creator can open event_form.php');
+expect(pageAllowed(account('creator'), 'attendees.php') === true, 'creator can open attendee management before event ownership is checked');
+expect(pageAllowed(account('creator'), 'checkin.php') === true, 'creator can open check-in before event ownership is checked');
 expect(pageAllowed(account('creator'), 'staff.php') === false, 'creator cannot open staff.php');
 expect(pageAllowed(account('creator'), 'admin.php') === false, 'creator cannot open admin.php');
 
@@ -33,10 +35,14 @@ expect(pageAllowed(account('staff'), 'staff.php') === true, 'staff can open staf
 expect(pageAllowed(account('staff'), 'admin.php') === false, 'staff cannot open admin.php');
 expect(pageAllowed(account('staff'), 'dashboard.php') === false, 'staff cannot open dashboard.php');
 expect(pageAllowed(account('staff'), 'event_form.php') === true, 'staff can open event_form.php for an assigned creator');
+expect(pageAllowed(account('staff'), 'attendees.php') === true, 'staff can open attendee management before assignment is checked');
+expect(pageAllowed(account('staff'), 'checkin.php') === true, 'staff can open check-in before assignment is checked');
 
 expect(pageAllowed(account('admin'), 'admin.php') === true, 'admin can open admin.php');
 expect(pageAllowed(account('admin'), 'staff.php') === false, 'admin cannot open staff.php');
 expect(pageAllowed(account('admin'), 'dashboard.php') === false, 'admin cannot open dashboard.php');
+expect(pageAllowed(account('admin'), 'attendees.php') === false, 'admin cannot use attendee management as a working page');
+expect(pageAllowed(account('admin'), 'checkin.php') === false, 'admin cannot use check-in as a working page');
 
 expect(pageAllowed(account('user'), 'my_bookings.php') === true, 'user can open my_bookings.php');
 expect(pageAllowed(account('user'), 'dashboard.php') === false, 'user cannot open dashboard.php');

@@ -1,3 +1,5 @@
+> Historical Week 2 report. For the current implementation and validation, see [RELEASE.md](RELEASE.md) and [TEST_REPORT.md](TEST_REPORT.md).
+
 # Week 2 access test report
 
 Run date is 16 October 2026. The checks cover the week 2 role gates. No application PHP was edited. This report does not include the database password from `config.php`.

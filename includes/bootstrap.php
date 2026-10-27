@@ -3,12 +3,16 @@ declare(strict_types=1);
 
 $configPath = __DIR__ . '/../config.php';
 if (!file_exists($configPath)) {
+    http_response_code(503);
     exit('Configuration missing. Copy config.example.php to config.php and update it.');
 }
 $config = require $configPath;
+date_default_timezone_set($config['timezone'] ?? 'Asia/Hong_Kong');
+set_exception_handler(function (Throwable $exception): void { serverError($exception); });
 
 ini_set('display_errors', '0');
 require_once __DIR__ . '/security.php';
+applicationKey();
 startSecureSession($config);
 sendSecurityHeaders($config);
 // A single guard protects every POST, including login, registration and logout.
@@ -43,7 +47,10 @@ try {
     if (!empty($config['db_ssl_verify']) && $sslVerifyAttr !== null) {
         $options[$sslVerifyAttr] = true;
     }
+    if ($sslCa !== '' && !is_readable($sslCa)) throw new RuntimeException('SSL CA is unreadable.');
     $pdo = new PDO($dsn, $config['db_user'], $config['db_pass'], $options);
+    $offset = (new DateTimeImmutable())->format('P');
+    $pdo->exec("SET time_zone = " . $pdo->quote($offset));
 } catch (PDOException $exception) {
     serverError($exception);
 }
@@ -51,14 +58,16 @@ try {
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/booking.php';
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/accounts.php';
+require_once __DIR__ . '/tickets.php';
 
 // Refresh roles on each request so a database role change takes effect immediately.
 if (isLoggedIn()) {
     try {
-        $statement = $pdo->prepare('SELECT user_id,name,email,role FROM users WHERE user_id=?');
+        $statement = $pdo->prepare('SELECT user_id,name,email,role,email_verified_at,is_school_email,school_email_verified,is_active,auth_version FROM users WHERE user_id=?');
         $statement->execute([currentUser()['user_id']]);
         $user = $statement->fetch();
-        if (!$user) {
+        if (!$user || !(int)$user['is_active'] || (int)($_SESSION['auth_version'] ?? 0) !== (int)$user['auth_version']) {
             resetSession();
         } else {
             $_SESSION['user'] = $user;

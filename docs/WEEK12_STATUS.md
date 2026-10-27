@@ -1,3 +1,5 @@
+> Historical milestone status. Current features and limitations are recorded in [RELEASE.md](RELEASE.md).
+
 # Week 1-2 status
 
 Verdicts below are against the Log Task 2 four-role model (user, creator, staff, admin). They are not a claim that the old three-role demo failed its own tests.

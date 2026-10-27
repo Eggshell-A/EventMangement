@@ -13,13 +13,14 @@ function resetSession(): void {
 
 function startSecureSession(array $config): void {
     if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_name('FAIRBOARDSESSID');
         ini_set('session.use_strict_mode', '1');
         ini_set('session.use_only_cookies', '1');
         ini_set('session.use_trans_sid', '0');
         $secure = requestUsesHttps() || ($config['session_secure'] ?? false)
             || strtolower((string) parse_url($config['base_url'], PHP_URL_SCHEME)) === 'https';
         session_set_cookie_params([
-            'lifetime' => 0, 'path' => '/', 'secure' => $secure,
+            'lifetime' => 0, 'path' => rtrim((string)(parse_url($config['base_url'], PHP_URL_PATH) ?? ''), '/') . '/', 'secure' => $secure,
             'httponly' => true, 'samesite' => 'Lax',
         ]);
         session_start();
@@ -42,7 +43,7 @@ function startSecureSession(array $config): void {
             $_SESSION['flash'][] = ['message' => 'Your session has expired. Please log in again.', 'type' => 'error'];
         } else {
             $_SESSION['authenticated_at'] = $authenticatedAt;
-            $_SESSION['last_activity'] = $now;
+            if (basename($_SERVER['SCRIPT_NAME'] ?? '') !== 'ticket_qr.php') $_SESSION['last_activity'] = $now;
         }
     }
 }
@@ -51,7 +52,8 @@ function sendSecurityHeaders(array $config): void {
     header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'");
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: DENY');
-    header('Referrer-Policy: same-origin');
+    header('Referrer-Policy: no-referrer');
+    header('Permissions-Policy: camera=(self), microphone=(), geolocation=()');
     header('Cache-Control: no-store, private');
     $hsts = max(0, (int) ($config['hsts_max_age'] ?? 0));
     if ($hsts > 0 && (requestUsesHttps() || strtolower((string) parse_url($config['base_url'], PHP_URL_SCHEME)) === 'https')) {
@@ -106,10 +108,41 @@ function postPositiveInt(string $name): int {
 }
 
 function passwordMeetsPolicy(string $password): bool {
-    return mb_check_encoding($password, 'UTF-8')
-        && mb_strlen($password, 'UTF-8') >= 8 && mb_strlen($password, 'UTF-8') <= 16
+    return mb_check_encoding($password, 'UTF-8') && !str_contains($password, "\0")
+        && mb_strlen($password, 'UTF-8') >= 12 && strlen($password) <= 72
         && preg_match('/[A-Z]/', $password) === 1 && preg_match('/[a-z]/', $password) === 1
         && preg_match('/[0-9]/', $password) === 1 && preg_match('/[^\p{L}\p{N}\s]/u', $password) === 1;
+}
+function queryString(string $name, string $default = ''): string {
+    $value = $_GET[$name] ?? $default;
+    if (!is_string($value)) { http_response_code(400); exit('Invalid query.'); }
+    return $value;
+}
+function queryId(string $name = 'id'): int {
+    $value = filter_var(queryString($name), FILTER_VALIDATE_INT, ['options'=>['min_range'=>1,'max_range'=>4294967295]]);
+    if ($value === false) { http_response_code(400); exit('Invalid identifier.'); }
+    return $value;
+}
+function abortRequest(int $status, string $message): never {
+    http_response_code($status);
+    exit(htmlspecialchars($message, ENT_QUOTES, 'UTF-8'));
+}
+function applicationKey(): string {
+    global $config;
+    $key = (string)($config['app_key'] ?? '');
+    if (strlen($key) < 32) throw new RuntimeException('Configure an application key of at least 32 bytes.');
+    return $key;
+}
+function isDeveloper(): bool {
+    global $config;
+    return isRole('admin') && ($config['app_env'] ?? '') === 'development'
+        && ($config['enable_developer_tools'] ?? false) === true
+        && in_array((int)currentUser()['user_id'], array_map('intval', $config['developer_user_ids'] ?? []), true);
+}
+function audit(PDO $pdo, string $action, ?int $subjectId = null): void {
+    $ip = hash_hmac('sha256', (string)($_SERVER['REMOTE_ADDR'] ?? 'cli'), applicationKey());
+    $pdo->prepare('INSERT INTO audit_log (actor_id,action,subject_id,ip_hash) VALUES (?,?,?,?)')
+        ->execute([currentUser()['user_id'] ?? null, $action, $subjectId, $ip]);
 }
 
 function serverError(Throwable $exception): never {

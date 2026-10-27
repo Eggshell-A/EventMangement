@@ -1,26 +1,9 @@
 <?php
-require __DIR__ . '/includes/bootstrap.php';
-requireRole('user');
-$id = (int) ($_GET['id'] ?? 0);
-$statement = $pdo->prepare('SELECT e.title, e.start_time, e.location, e.capacity, (SELECT COUNT(*) FROM bookings b2 WHERE b2.event_id = e.event_id) AS booking_count FROM events e JOIN bookings b ON b.event_id = e.event_id WHERE e.event_id = ? AND b.user_id = ?');
-$statement->execute([$id, currentUser()['user_id']]);
-$event = $statement->fetch();
-if (!$event) {
-    http_response_code(404);
-    exit('Booking not found.');
-}
-$left = max(0, (int) $event['capacity'] - (int) $event['booking_count']);
-$pageTitle = 'Booking confirmed';
-require __DIR__ . '/includes/header.php';
-?>
-<article class="success-panel">
-  <p class="kicker">Booking confirmed</p>
-  <h1><?= e($event['title']) ?></h1>
-  <p><?= e(date('l j F Y, H:i', strtotime($event['start_time']))) ?><br><?= e($event['location']) ?></p>
-  <p class="places-line"><strong><?= $left ?></strong> <?= $left === 1 ? 'place' : 'places' ?> left after your booking.</p>
-  <div class="form-actions">
-    <a class="button" href="my_bookings.php">My bookings</a>
-    <a class="button ghost" href="event.php?id=<?= $id ?>">Back to the event</a>
-  </div>
-</article>
-<?php require __DIR__ . '/includes/footer.php';
+require __DIR__.'/includes/bootstrap.php';requireRole('user');$id=queryId();
+$q=$pdo->prepare('SELECT b.booking_id,b.checked_in,e.* FROM bookings b JOIN events e ON e.event_id=b.event_id WHERE e.event_id=? AND b.user_id=?');$q->execute([$id,currentUser()['user_id']]);$event=$q->fetch();if(!$event)abortRequest(404,'Booking not found.');
+$active=$event['status']==='approved'&&!$event['checked_in']&&time()<=strtotime($event['start_time'])+(int)($config['checkin_after_seconds']??43200);
+$pageTitle='Your ticket';require __DIR__.'/includes/header.php';?>
+<div class="page-head"><div><p class="eyebrow">YOU'RE ON THE LIST</p><h1>Your next memory.</h1></div><a class="button secondary" href="my_bookings.php">All bookings</a></div>
+<article class="ticket"><div class="ticket-cover"><img src="<?=e(eventArtwork($event))?>" alt=""><span class="pill"><?=e($event['category'])?></span></div><div class="ticket-copy"><p class="eyebrow">FAIRBOARD ADMISSION · #<?=str_pad((string)$event['booking_id'],6,'0',STR_PAD_LEFT)?></p><h2><?=e($event['title'])?></h2><dl class="facts"><div><dt>WHEN</dt><dd><?=e(date('D d M Y · H:i',strtotime($event['start_time'])))?></dd></div><div><dt>WHERE</dt><dd><?=e($event['location'])?></dd></div><div><dt>GUEST</dt><dd><?=e(currentUser()['name'])?></dd></div></dl><a class="text-link" href="event.php?id=<?=$id?>">Event details ↗</a></div>
+<div class="ticket-code"><?php if($active):?><div data-ticket data-booking-id="<?=(int)$event['booking_id']?>"><img data-ticket-image alt="Your live admission QR code" width="240" height="240" hidden><p class="qr-status" data-ticket-status role="status">Loading secure ticket…</p><progress data-ticket-progress max="30" value="0" aria-label="Time until ticket refresh"></progress><p class="fine-print">Code refreshes every 30 seconds.<br>Show this screen at the entrance.</p><button type="button" class="secondary small" data-ticket-retry>Refresh code</button></div><noscript>Enable JavaScript to display your rotating ticket. Staff can also look up your booking at the entrance.</noscript><?php else:?><span class="ticket-stamp"><?=$event['checked_in']?'CHECKED IN':(in_array($event['status'],['removed','cancelled'],true)?'CANCELLED':'INACTIVE')?></span><p>This ticket cannot be used for admission.</p><?php endif;?></div></article>
+<?php require __DIR__.'/includes/footer.php';?>

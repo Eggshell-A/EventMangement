@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 function authBucketKey(string $scope, string $identity): string {
-    return hash('sha256', $scope . ':' . $identity);
+    return hash_hmac('sha256', $scope . ':' . $identity, applicationKey());
 }
 
 /** Reserve attempts before verifying credentials, across sessions and PHP workers. */
@@ -65,6 +65,8 @@ function establishLogin(array $user): void {
     unset($user['password_hash']);
     $_SESSION['user'] = $user;
     $_SESSION['security_version'] = 1;
+    $_SESSION['auth_version'] = (int)($user['auth_version'] ?? 1);
+    $_SESSION['reauthenticated_at'] = time();
     $_SESSION['authenticated_at'] = time();
     $_SESSION['last_activity'] = time();
     csrfToken();

@@ -1,65 +1,15 @@
 <?php
-require __DIR__ . '/includes/bootstrap.php';
-requireRole('admin');
-$statement = $pdo->query("SELECT e.*, u.name organiser_name FROM events e JOIN users u ON u.user_id = e.organiser_id WHERE e.status = 'pending' ORDER BY e.created_at ASC");
-$pending = $statement->fetchAll();
-$statement = $pdo->query("SELECT e.*, u.name organiser_name FROM events e JOIN users u ON u.user_id = e.organiser_id WHERE e.status IN ('approved','rejected','removed') ORDER BY e.updated_at DESC LIMIT 30");
-$all = $statement->fetchAll();
-$users = $pdo->query('SELECT u.user_id, u.name, u.email, u.role, u.is_school_email, u.school_email_verified, p.organisation_name, p.plan_code FROM users u LEFT JOIN creator_plans p ON p.user_id = u.user_id ORDER BY u.name, u.email')->fetchAll();
-$pageTitle = 'Admin';
-require __DIR__ . '/includes/header.php';
-?>
-<h1>Admin</h1>
-<h2>Pending events</h2>
-<?php if (!$pending): ?>
-  <p class="notice">No pending events.</p>
-<?php else: ?>
-  <div class="table-wrap"><table><thead><tr><th>Event</th><th>Creator</th><th class="no-print">Actions</th></tr></thead><tbody>
-  <?php foreach ($pending as $event): ?>
-    <tr>
-      <td><strong><?= e($event['title']) ?></strong><br><?= e(date('j M Y, H:i', strtotime($event['start_time']))) ?><br><?= e($event['location']) ?></td>
-      <td><?= e($event['organiser_name']) ?></td>
-      <td class="no-print"><div class="actions">
-        <form method="post" action="admin_action.php"><?= csrfField() ?><input type="hidden" name="event_id" value="<?= (int) $event['event_id'] ?>"><input type="hidden" name="action" value="approve"><button>Approve</button></form>
-        <form method="post" action="admin_action.php"><?= csrfField() ?><input type="hidden" name="event_id" value="<?= (int) $event['event_id'] ?>"><input type="hidden" name="action" value="reject"><button class="danger">Reject</button></form>
-        <form method="post" action="admin_action.php"><?= csrfField() ?><input type="hidden" name="event_id" value="<?= (int) $event['event_id'] ?>"><input type="hidden" name="action" value="remove"><button class="danger">Remove</button></form>
-      </div></td>
-    </tr>
-  <?php endforeach; ?>
-  </tbody></table></div>
-<?php endif; ?>
-<h2>Recent decisions</h2>
-<div class="table-wrap"><table><thead><tr><th>Event</th><th>Status</th><th class="no-print">Action</th></tr></thead><tbody>
-<?php foreach ($all as $event): ?>
-  <tr>
-    <td><?= e($event['title']) ?></td>
-    <td><span class="status <?= e($event['status']) ?>"><?= e($event['status']) ?></span></td>
-    <td class="no-print"><form method="post" action="admin_action.php"><?= csrfField() ?><input type="hidden" name="event_id" value="<?= (int) $event['event_id'] ?>"><input type="hidden" name="action" value="remove"><button class="danger">Remove</button></form></td>
-  </tr>
-<?php endforeach; ?>
-</tbody></table></div>
-<h2>Users</h2>
-<div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Plan</th><th class="no-print">School email</th></tr></thead><tbody>
-<?php foreach ($users as $person): ?>
-  <tr>
-    <td><?= e($person['name']) ?><?php if ($person['organisation_name']): ?><br><span class="muted"><?= e($person['organisation_name']) ?></span><?php endif; ?></td>
-    <td><?= e($person['email']) ?></td>
-    <td><?= e($person['role']) ?></td>
-    <td><?= e(planFeeLabel($person['plan_code'] ?? null)) ?></td>
-    <td class="no-print">
-      <?php if ((int) $person['is_school_email'] === 1 && (int) $person['school_email_verified'] === 0): ?>
-        <form method="post" action="admin_action.php"><?= csrfField() ?>
-          <input type="hidden" name="action" value="verify_school">
-          <input type="hidden" name="user_id" value="<?= (int) $person['user_id'] ?>">
-          <button type="submit">Verify school email</button>
-        </form>
-      <?php elseif ((int) $person['school_email_verified'] === 1): ?>
-        Verified
-      <?php else: ?>
-        —
-      <?php endif; ?>
-    </td>
-  </tr>
-<?php endforeach; ?>
-</tbody></table></div>
-<?php require __DIR__ . '/includes/footer.php';
+require __DIR__.'/includes/bootstrap.php';requireRole('admin');
+$pending=$pdo->query("SELECT e.*,u.name organiser_name FROM events e JOIN users u ON u.user_id=e.organiser_id WHERE e.status='pending' ORDER BY e.created_at")->fetchAll();
+$recent=$pdo->query("SELECT event_id,title,status FROM events WHERE status<>'pending' ORDER BY updated_at DESC LIMIT 30")->fetchAll();
+$users=$pdo->query('SELECT u.user_id,u.name,u.email,u.role,u.is_active,u.school_email_verified,u.email_verified_at,p.plan_code FROM users u LEFT JOIN creator_plans p ON p.user_id=u.user_id ORDER BY u.user_id DESC LIMIT 200')->fetchAll();
+$staff=array_filter($users,fn($u)=>$u['role']==='staff'&&$u['is_active']);$creators=array_filter($users,fn($u)=>$u['role']==='creator'&&$u['is_active']);
+$assignments=$pdo->query('SELECT s.*,u.name staff_name,c.name creator_name FROM staff_assignments s JOIN users u ON u.user_id=s.staff_user_id JOIN users c ON c.user_id=s.creator_user_id')->fetchAll();
+$pageTitle='Admin workspace';require __DIR__.'/includes/header.php';?>
+<div class="page-head"><div><p class="eyebrow">KEEP GOOD THINGS RUNNING</p><h1>Admin workspace.</h1></div><div class="actions"><a class="button secondary" href="billing.php">Creator invoices</a><?php if(isDeveloper()):?><a class="button secondary" href="developer.php">SQL explorer</a><?php endif;?><a class="button" href="scan.php">Scanner ↗</a></div></div>
+<div class="stats-grid"><div class="stat"><strong><?=count($pending)?></strong><span>Awaiting approval</span></div><div class="stat"><strong><?=(int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn()?></strong><span>Registered accounts</span></div><div class="stat"><strong><?=count($assignments)?></strong><span>Staff assignments</span></div></div>
+<h2>Review queue</h2><?php if(!$pending):?><p class="notice">All caught up. No events are waiting for approval.</p><?php endif;?><div class="table-wrap"><table><thead><tr><th>Event</th><th>Creator</th><th>Decision</th></tr></thead><tbody><?php foreach($pending as $event):?><tr><td><a href="event.php?id=<?=(int)$event['event_id']?>"><strong><?=e($event['title'])?></strong> ↗</a><br><span class="muted"><?=e($event['start_time'])?> · <?=e($event['location'])?></span></td><td><?=e($event['organiser_name'])?></td><td><div class="actions"><?php foreach(['approve'=>'Approve','reject'=>'Reject']as $action=>$label):?><form method="post" action="admin_action.php"><?=csrfField()?><input type="hidden" name="event_id" value="<?=(int)$event['event_id']?>"><input type="hidden" name="action" value="<?=$action?>"><button class="<?=$action==='reject'?'danger':''?>"><?=$label?></button></form><?php endforeach;?></div></td></tr><?php endforeach;?></tbody></table></div>
+<details><summary>Recent event decisions</summary><div class="table-wrap"><table><thead><tr><th>Event</th><th>Status</th><th>Action</th></tr></thead><tbody><?php foreach($recent as $event):?><tr><td><?=e($event['title'])?></td><td><span class="status <?=e($event['status'])?>"><?=e($event['status'])?></span></td><td><?php if($event['status']!=='removed'):?><form method="post" action="admin_action.php" data-confirm="Remove this event from public listings and invalidate its admission tickets?"><?=csrfField()?><input type="hidden" name="event_id" value="<?=(int)$event['event_id']?>"><input type="hidden" name="action" value="remove"><button class="danger small">Remove</button></form><?php endif;?></td></tr><?php endforeach;?></tbody></table></div></details>
+<div class="two-column"><section class="panel"><h2>Assign event staff</h2><p class="muted">Staff can edit and check in guests only for their assigned creators.</p><form method="post" action="admin_action.php"><?=csrfField()?><input type="hidden" name="action" value="assign_staff"><label for="staff">Staff member</label><select id="staff" name="staff_id" required><option value="">Choose staff</option><?php foreach($staff as $u):?><option value="<?=(int)$u['user_id']?>"><?=e($u['name'].' · '.$u['email'])?></option><?php endforeach;?></select><label for="creator">Creator</label><select id="creator" name="creator_id" required><option value="">Choose creator</option><?php foreach($creators as $u):?><option value="<?=(int)$u['user_id']?>"><?=e($u['name'].' · '.$u['email'])?></option><?php endforeach;?></select><button>Assign staff</button></form></section><section class="panel"><h2>Current assignments</h2><?php foreach($assignments as $a):?><p><?=e($a['staff_name'])?> → <?=e($a['creator_name'])?></p><form method="post" action="admin_action.php"><?=csrfField()?><input type="hidden" name="action" value="unassign_staff"><input type="hidden" name="staff_id" value="<?=(int)$a['staff_user_id']?>"><input type="hidden" name="creator_id" value="<?=(int)$a['creator_user_id']?>"><button class="secondary small">Revoke assignment</button></form><?php endforeach;?><?php if(!$assignments):?><p class="muted">No staff assigned yet.</p><?php endif;?></section></div>
+<div class="section-heading compact"><h2>Accounts & societies</h2><span class="muted">Latest 200 accounts</span></div><div class="table-wrap"><table><thead><tr><th>Name / email</th><th>Role</th><th>Email</th><th>Society</th><th>Account</th></tr></thead><tbody><?php foreach($users as $u):?><tr><td><?=e($u['name'])?><br><span class="muted"><?=e($u['email'])?></span></td><td><?=e($u['role'])?></td><td><?=$u['email_verified_at']?'Verified':'Unverified'?></td><td><?php if($u['role']==='creator'&&$u['school_email_verified']&&$u['email_verified_at']&&$u['plan_code']!=='verified_society'):?><form method="post" action="admin_action.php"><?=csrfField()?><input type="hidden" name="action" value="approve_society"><input type="hidden" name="user_id" value="<?=(int)$u['user_id']?>"><label class="sr-only" for="reference-<?=(int)$u['user_id']?>">Society evidence reference</label><input id="reference-<?=(int)$u['user_id']?>" name="reference" maxlength="120" placeholder="Society evidence reference" required><button class="secondary small">Approve society</button></form><?php else:?><?=e($u['plan_code']==='verified_society'?'Approved society':'—')?><?php endif;?></td><td><?php if($u['role']!=='admin'):?><form method="post" action="admin_action.php" data-confirm="Change this account's access? Active sessions will be invalidated."><?=csrfField()?><input type="hidden" name="action" value="set_active"><input type="hidden" name="user_id" value="<?=(int)$u['user_id']?>"><input type="hidden" name="active" value="<?=$u['is_active']?'0':'1'?>"><button class="<?=$u['is_active']?'danger':'secondary'?> small"><?=$u['is_active']?'Disable':'Enable'?></button></form><?php else:?>Active<?php endif;?></td></tr><?php endforeach;?></tbody></table></div>
+<?php require __DIR__.'/includes/footer.php';?>

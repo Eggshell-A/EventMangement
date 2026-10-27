@@ -1,0 +1,31 @@
+<?php
+if(PHP_SAPI!=='cli'){http_response_code(404);exit;}
+$config=require __DIR__.'/../config.php';if(($config['app_env']??'')!=='development')exit("Demo data is development-only.\n");
+date_default_timezone_set($config['timezone']??'Asia/Hong_Kong');
+$options=[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION];if(!empty($config['db_ssl_ca'])){$options[PDO::MYSQL_ATTR_SSL_CA]=$config['db_ssl_ca'];$options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT]=true;}
+$pdo=new PDO('mysql:host='.$config['db_host'].';port='.($config['db_port']?:3306).';dbname='.$config['db_name'].';charset=utf8mb4',$config['db_user'],$config['db_pass'],$options);
+$password=getenv('EVENTLINK_DEMO_PASSWORD')?:'Demo!'.bin2hex(random_bytes(10));$hash=password_hash($password,PASSWORD_BCRYPT,['cost'=>12]);
+foreach(['user'=>'Alex Guest','creator'=>'North Campus Collective','staff'=>'Jordan Staff','admin'=>'Fairboard Admin']as $role=>$name){
+ $email=$role.'@fairboard.test';$q=$pdo->prepare('INSERT IGNORE INTO users(name,email,password_hash,role,email_verified_at) VALUES(?,?,?,?,NOW())');$q->execute([$name,$email,$hash,$role]);
+ echo $email.($q->rowCount()?" created; password: $password":" already exists; unchanged")."\n";
+}
+$uid=fn($role)=>(int)$pdo->query("SELECT user_id FROM users WHERE email=".$pdo->quote($role.'@fairboard.test'))->fetchColumn();$creator=$uid('creator');
+$pdo->prepare("INSERT IGNORE INTO creator_plans(user_id,organisation_name,plan_code)VALUES(?,'North Campus Collective','external_monthly')")->execute([$creator]);
+$pdo->prepare('INSERT IGNORE INTO staff_assignments(staff_user_id,creator_user_id)VALUES(?,?)')->execute([$uid('staff'),$creator]);
+$events=[
+ ['After Hours: Live Sessions','Music','concert','Student Union Hall',80,3,'A room full of good music and better company. Join student bands and guest artists for an intimate evening of live sets. Doors open 30 minutes early. Bring your friends and discover your next favourite sound.'],
+ ['Cinema Under the Stars','Film','cinema','Harbour Rooftop',60,5,'A night for film lovers. Settle in for independent short films, a conversation with the filmmakers, and a skyline worth staying up for. Bring a light jacket; seating is provided.'],
+ ['Colour Outside the Lines','Arts','gallery','The Creative Studio',24,7,'Make something just because. Explore colour, collage and printmaking in a relaxed guided workshop. All materials are included and no previous experience is needed.'],
+ ['Build Something: Creative Tech','Technology','digital','Innovation Lab',35,9,'An afternoon of ideas and hands-on experiments. Meet other makers, try a small creative coding project and share what you build. Bring your laptop; beginners are welcome.'],
+ ['The City After Dark','Community','city','Victoria Harbour',40,11,'See familiar streets from a new angle. A guided neighbourhood walk with local stories, independent makers and a stop for street food. Meet at the harbour steps.'],
+ ['Take the Scenic Route','Outdoors','nature','Dragon’s Back Trail',20,13,'Fresh air, wide views and a slower morning. Join a small group for a gentle trail walk with time to take it all in. Bring water, comfortable shoes and sun protection.'],
+ ['Sunday Sound Club','Music','concert','The Listening Room',30,16,'An easy Sunday with acoustic sets, shared playlists and new connections. Come for a song. Stay for the afternoon.'],
+ ['Frame by Frame','Film','cinema','Lecture Theatre B',50,19,'Four short films. Four different worlds. Stay after the screening for an open discussion about what makes a story stay with us.'],
+ ['A Little Room to Create','Arts','gallery','Library Workshop',18,22,'A focused creative session for anyone who wants to try something new. Make a small artwork to take home, with guidance from student artists.'],
+];
+foreach($events as [$title,$category,$art,$location,$cap,$days,$description]){
+ $q=$pdo->prepare('SELECT 1 FROM events WHERE organiser_id=? AND title=?');$q->execute([$creator,$title]);if($q->fetchColumn())continue;
+ $start=(new DateTimeImmutable('+'.$days.' days'))->setTime(19,0)->format('Y-m-d H:i:s');
+ $pdo->prepare("INSERT INTO events(organiser_id,title,description,start_time,location,capacity,original_capacity,category,artwork,status)VALUES(?,?,?,?,?,?,?,?,?,'approved')")->execute([$creator,$title,$description,$start,$location,$cap,$cap,$category,$art]);
+}
+echo "Development demo is ready. No existing accounts or events were overwritten.\n";

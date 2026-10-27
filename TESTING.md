@@ -1,3 +1,5 @@
+> Historical record from 22 October 2026. Current implementation and verification: [release notes](docs/RELEASE.md) and [test report](docs/TEST_REPORT.md). Use the test commands in [README](README.md#tests) for the current version.
+
 # Security regression verification — 22 October 2026
 
 Base: `f26023444283e4ee5ea5f412eaf297914907e401`.
