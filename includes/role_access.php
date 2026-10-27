@@ -15,6 +15,12 @@ function guardedPages(): array
 {
     return [
         'dashboard.php' => ['creator'],
+        'photo.php' => ['creator','staff'],
+        'developer.php' => ['admin'],
+        'scan.php' => ['creator','staff','admin'],
+        'ticket_qr.php' => ['user'],
+        'leave_waitlist.php' => ['user'],
+        'billing.php' => ['creator','admin'],
         'event_form.php' => ['creator', 'staff'],
         'organiser_action.php' => ['creator'],
         'staff.php' => ['staff'],

@@ -1,3 +1,8 @@
-config.php
-.DS_Store
+/config.php
 /vendor/
+/storage/*
+!/storage/.htaccess
+/node_modules/
+/test-results/
+*.log
+.env

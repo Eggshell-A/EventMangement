@@ -1,3 +1,5 @@
+> Historical Week 2 report. For the current implementation and validation, see [RELEASE.md](RELEASE.md) and [TEST_REPORT.md](TEST_REPORT.md).
+
 # Week 2 role review
 
 Source review of the week 1 and week 2 role code on 16 Oct 2026. The pages were not executed in a browser. Week 3 school-email verification was not reviewed.
