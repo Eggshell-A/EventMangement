@@ -34,7 +34,7 @@ def create(name,role='user'):
 try:
  db('DELETE FROM auth_rate_limits')
  guest=requests.Session();r=get(guest,'index.php');check(r.status_code==200 and 'Less scrolling.' in r.text,'public discovery renders');check("script-src 'self'" in r.headers.get('Content-Security-Policy',''),'strict self-hosted CSP');check(r.headers.get('X-Content-Type-Options')=='nosniff','nosniff header');check('HttpOnly' in r.headers.get('Set-Cookie','') and 'SameSite=Lax' in r.headers.get('Set-Cookie',''),'cookie security flags')
- for path in ['config.php','database.sql','database/release_tables.sql','tools/migrate.php','tests/db_fixture.php','storage/mail/example.txt','includes/security.php','.git/config','composer.lock']:
+ for path in ['config.php','security_test_results.json','database.sql','database/release_tables.sql','tools/migrate.php','tests/db_fixture.php','storage/mail/example.txt','includes/security.php','.git/config','composer.lock']:
   check(get(guest,path).status_code==404,'private file blocked '+path)
  for path in ['login.php','register.php','booking_action.php','cancel_booking.php','leave_waitlist.php','event_form.php','admin_action.php','organiser_action.php','checkin.php','ticket_qr.php','scan.php','account.php','notifications.php','billing.php','developer.php','forgot_password.php','reset_password.php','verify_email.php','photo.php?id=1','logout.php']:
   check(guest.post(URL+'/'+path,data={'csrf_token':'bad'},timeout=20).status_code==403,'CSRF enforced '+path)

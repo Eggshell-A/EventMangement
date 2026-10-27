@@ -4,7 +4,7 @@ The release was executed locally with PHP 8.3, MariaDB 10.11 (InnoDB), four PHP 
 
 | Check | Result |
 |---|---|
-| HTTP/database integration (`tests/integration.py`) | 138 assertions passed |
+| HTTP/database integration (`tests/integration.py`) | 139 assertions passed |
 | Real browser flows (`tests/browser.cjs`) | 62 assertions passed; no JavaScript or CSP console errors |
 | Security boundary unit tests (`tests/security_unit.php`) | 26 assertions passed |
 | Existing role matrix (`tests/role_access_test.php`) | Passed |

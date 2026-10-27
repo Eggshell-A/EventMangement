@@ -1,5 +1,5 @@
 Options -Indexes -MultiViews
-<FilesMatch "^(config(?:\.example)?\.php|composer\.(json|lock)|router\.php|.*\.(sql|md|pem|log|txt))$">
+<FilesMatch "^(config(?:\.example)?\.php|composer\.(json|lock)|router\.php|security_test_results\.json|.*\.(sql|md|pem|log|txt))$">
  Require all denied
 </FilesMatch>
 RewriteEngine On

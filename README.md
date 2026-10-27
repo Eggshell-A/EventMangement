@@ -76,6 +76,8 @@ The original unauthenticated third-party AI image demo has been replaced with an
 
 ## Tests
 
+The earlier `SECURITY_RELEASE.md`, `TESTING.md`, `security_test_results.json` and legacy test scripts are retained as historical records. Use the current suites below and [release test report](docs/TEST_REPORT.md).
+
 ```sh
 composer test
 php tests/migration.php

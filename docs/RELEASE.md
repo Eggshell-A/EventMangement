@@ -2,6 +2,8 @@
 
 This release completes the app's account, discovery, booking, event-management and admission workflows on top of upstream commit `f26023444283e4ee5ea5f412eaf297914907e401`. It incorporates and extends the protections in the still-open security PR #1; merge this release as the combined change, then review whether #1 can be closed as superseded.
 
+The fork’s existing security history and supporting reports are preserved. Earlier reports are marked as historical; this release’s executed checks are in [TEST_REPORT.md](TEST_REPORT.md).
+
 ## Visible changes
 
 - Responsive dark discovery pages, original event illustrations, category/date/search filters, popular events, accessible forms and navigation.
