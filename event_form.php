@@ -71,7 +71,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($capacity < $info['bookings']) {
                         throw new CapacityBelowBookings();
                     }
-                    if ($lockedEvent['status']==='approved' && $capacity > (int)$lockedEvent['capacity'] + max(1,(int)ceil((int)$lockedEvent['capacity']/10))) throw new DomainException('Increase capacity by at most 10% per refill.');
                     $changed = $title !== $lockedEvent['title'] || $description !== $lockedEvent['description'] || $location !== $lockedEvent['location'] || $date->format('Y-m-d H:i:s') !== $lockedEvent['start_time'];
                     $changed=$changed || $socialUrl!==(string)($lockedEvent['social_url']??'');
                     $status=$intent==='save_draft'?'draft':(($changed||in_array($lockedEvent['status'],['draft','rejected','cancelled'],true)&&isRole('creator'))?'pending':$lockedEvent['status']);

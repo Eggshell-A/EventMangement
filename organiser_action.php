@@ -7,8 +7,7 @@ try{
   if(!$event||!isEventOwnerOrAdmin($event))throw new BookingAccessDenied();
   if(strtotime($event['start_time'])<=time())throw new DomainException('Past events cannot be changed.');
   if($action==='add_places'){
-   $maximum=max(1,(int)ceil((int)$event['capacity']/10));
-   if($number>$maximum||(int)$event['capacity']+$number>100000)throw new DomainException('Add at most '.$maximum.' places per refill (10% of current capacity, rounded up).');
+   if((int)$event['capacity']+$number>100000)throw new DomainException('Total capacity cannot exceed 100,000.');
    $pdo->prepare('UPDATE events SET capacity=capacity+? WHERE event_id=?')->execute([$number,$id]);$event['capacity']+=$number;
    $moved=promoteWaiting($pdo,$event,$number);audit($pdo,'event.refill',$id);flash($number.' places added; '.$moved.' waiting attendees promoted.');
   }else{
