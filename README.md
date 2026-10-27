@@ -26,7 +26,7 @@ php tools/migrate.php
 
 The migration adds missing columns/tables, maps legacy roles, and backfills creator plans without deleting existing users, events or bookings. It is safe to repeat. An optional first argument supplies a configuration file outside the web root for a separate migration account. Use a database account with schema privileges for migration; the runtime account only needs SELECT/INSERT/UPDATE/DELETE.
 
-**Windows / XAMPP and Ubuntu instructions:** [日本語セットアップ](docs/SETUP_JA.md).
+**Windows / XAMPP and Ubuntu instructions:**
 
 ## What works
 
