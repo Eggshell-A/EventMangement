@@ -12,7 +12,7 @@ try{
    $pdo->prepare('UPDATE events SET capacity=capacity+? WHERE event_id=?')->execute([$number,$id]);$event['capacity']+=$number;
    $moved=promoteWaiting($pdo,$event,$number);audit($pdo,'event.refill',$id);flash($number.' places added; '.$moved.' waiting attendees promoted.');
   }else{
-   $pdo->prepare("UPDATE events SET status='removed' WHERE event_id=?")->execute([$id]);
+   $pdo->prepare("UPDATE events SET status='cancelled' WHERE event_id=?")->execute([$id]);
    $q=$pdo->prepare('SELECT user_id FROM bookings WHERE event_id=? UNION SELECT user_id FROM waiting_list WHERE event_id=?');$q->execute([$id,$id]);foreach($q->fetchAll()as $u)notifyUser($pdo,(int)$u['user_id'],'Event cancelled: '.$event['title'],$id);
    audit($pdo,'event.cancel',$id);flash('Event cancelled. Attendees have been notified.');
   }

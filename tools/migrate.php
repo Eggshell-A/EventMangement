@@ -16,6 +16,16 @@ $column=function(string $table,string $column,string $definition)use($pdo):void 
 $pdo->exec(file_get_contents(__DIR__.'/../database/migrate_week12.sql'));
 foreach(['is_school_email'=>'TINYINT(1) NOT NULL DEFAULT 0','school_email_verified'=>'TINYINT(1) NOT NULL DEFAULT 0','verified_at'=>'DATETIME NULL','verified_by'=>'INT UNSIGNED NULL','email_verified_at'=>'DATETIME NULL','is_active'=>'TINYINT(1) NOT NULL DEFAULT 1','auth_version'=>'INT UNSIGNED NOT NULL DEFAULT 1']as $name=>$def)$column('users',$name,$def);
 foreach(['category'=>"VARCHAR(32) NOT NULL DEFAULT 'Community'",'artwork'=>"VARCHAR(32) NOT NULL DEFAULT 'city'",'image_path'=>'VARCHAR(80) NULL']as $name=>$def)$column('events',$name,$def);
+$column('events','original_capacity','INT UNSIGNED NOT NULL DEFAULT 0');
+$column('events','refill_count','INT UNSIGNED NOT NULL DEFAULT 0');
+$column('events','poster_path','VARCHAR(255) NULL');
+$column('events','social_url','VARCHAR(500) NULL');
+$pdo->exec('UPDATE events SET original_capacity=capacity WHERE original_capacity=0 OR original_capacity IS NULL');
+$q=$pdo->query("SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='events' AND COLUMN_NAME='category'");
+if(strtolower($q->fetchColumn())!=='varchar(32)')$pdo->exec("ALTER TABLE events MODIFY category VARCHAR(32) NOT NULL DEFAULT 'Community'");
+foreach(['music'=>'Music','community'=>'Community','learning'=>'Learning','sports'=>'Sports','social'=>'Social','other'=>'Other']as $old=>$new){$q=$pdo->prepare('UPDATE events SET category=? WHERE BINARY category=?');$q->execute([$new,$old]);}
+$q=$pdo->query("SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='events' AND COLUMN_NAME='status'");
+if(!str_contains($q->fetchColumn(),"'draft'"))$pdo->exec("ALTER TABLE events MODIFY status ENUM('draft','pending','approved','rejected','cancelled','removed') NOT NULL DEFAULT 'pending'");
 $column('bookings','checked_in_at','DATETIME NULL');$column('bookings','checked_in_by','INT UNSIGNED NULL');
 $pdo->exec("CREATE TABLE IF NOT EXISTS creator_plans (user_id INT UNSIGNED PRIMARY KEY,organisation_name VARCHAR(120) NOT NULL,plan_code ENUM('verified_society','external_monthly') NOT NULL,FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE RESTRICT) ENGINE=InnoDB");
 $column('creator_plans','verification_reference','VARCHAR(120) NULL');

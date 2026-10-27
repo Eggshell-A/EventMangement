@@ -1,6 +1,6 @@
 <?php
 require __DIR__.'/includes/bootstrap.php';requireLogin();
-if(!in_array(currentUser()['role'],['creator','staff','admin'],true))abortRequest(403,'Only authorised event staff can scan tickets.');
+if(!in_array(currentUser()['role'],['creator','staff'],true))abortRequest(403,'Only authorised event staff can scan tickets.');
 $message='';$success=false;
 if($_SERVER['REQUEST_METHOD']==='POST'){
  $raw=trim(postString('token'));

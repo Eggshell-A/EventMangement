@@ -26,6 +26,6 @@ $events=[
 foreach($events as [$title,$category,$art,$location,$cap,$days,$description]){
  $q=$pdo->prepare('SELECT 1 FROM events WHERE organiser_id=? AND title=?');$q->execute([$creator,$title]);if($q->fetchColumn())continue;
  $start=(new DateTimeImmutable('+'.$days.' days'))->setTime(19,0)->format('Y-m-d H:i:s');
- $pdo->prepare("INSERT INTO events(organiser_id,title,description,start_time,location,capacity,category,artwork,status)VALUES(?,?,?,?,?,?,?,?,'approved')")->execute([$creator,$title,$description,$start,$location,$cap,$category,$art]);
+ $pdo->prepare("INSERT INTO events(organiser_id,title,description,start_time,location,capacity,original_capacity,category,artwork,status)VALUES(?,?,?,?,?,?,?,?,?,'approved')")->execute([$creator,$title,$description,$start,$location,$cap,$cap,$category,$art]);
 }
 echo "Development demo is ready. No existing accounts or events were overwritten.\n";

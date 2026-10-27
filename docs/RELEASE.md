@@ -1,15 +1,15 @@
 # Experience and security release — 27 October 2026
 
-This release completes the app's account, discovery, booking, event-management and admission workflows on top of upstream commit `f26023444283e4ee5ea5f412eaf297914907e401`. It incorporates and extends the protections in the still-open security PR #1; merge this release as the combined change, then review whether #1 can be closed as superseded.
+This release completes the app's account, discovery, booking, event-management and admission workflows and integrates the concurrent team redesign through `b186ce335be71371b4a446191ee5bb340c86196e`. It incorporates and extends the protections in the still-open security PR #1; merge this release as the combined change, then review whether #1 can be closed as superseded.
 
 The fork’s existing security history and supporting reports are preserved. Earlier reports are marked as historical; this release’s executed checks are in [TEST_REPORT.md](TEST_REPORT.md).
 
 ## Visible changes
 
-- Responsive dark discovery pages, original event illustrations, category/date/search filters, popular events, accessible forms and navigation.
+- Responsive dark discovery pages, original event illustrations, category/date/search filters, low-data mode, popular events, accessible forms and navigation.
 - Finished login and attendee/creator registration, password confirmation/reveal, email verification, one-use password reset, password changes and account profile.
 - Personal live QR tickets with a 30-second expiry, a local camera decoder, pasted-code fallback and authorised manual admission. Printed posters retain permanent event-discovery QR links.
-- Waiting-list status and departure, cancellation and FIFO promotion, notifications, creator capacity refill/cancellation, staff management and moderation.
+- Waiting-list status and departure, cancellation and FIFO promotion, notifications, creator drafts, social links, capacity refill/cancellation, staff management and moderation.
 - Authenticated cover studio with six built-in covers and raster uploads. The standalone unauthenticated Puter demo is replaced; third-party AI generation is not connected.
 - Development-only SQL table explorer: explicit admin allowlist, ten-minute reauthentication, metadata/counts and safe row previews.
 - Creator invoices and administrator recording of offline payments. No online card processing.
@@ -22,7 +22,7 @@ Sessions use a dedicated `FAIRBOARDSESSID` cookie scoped to the configured base 
 
 Login, registration, reset, verification, scanning, cover updates and sensitive reauthentication use persistent database rate limits. Keys are HMAC-derived from the application key and identities/IPs. Proxy forwarding headers are not trusted by the application; configure real client addresses at a trusted web-server boundary if needed.
 
-Event-row locks serialize booking, cancellation, refill, capacity editing, moderation and admission. There is one consistent event-first lock order. A ticket is validated again inside the lock and the booking can be checked in once. Unassigned staff and other attendees cannot access private tickets or guest data. Disabled accounts cannot redeem tickets.
+Event-row locks serialize booking, cancellation, refill, capacity editing, moderation and admission. There is one consistent event-first lock order. A ticket is validated again inside the lock and the booking can be checked in once. Admins remain in the moderation role; only the creator or assigned staff perform admission. Unassigned staff and other attendees cannot access private tickets or guest data. Disabled accounts cannot redeem tickets.
 
 SQL values use prepared statements; public output is escaped. Developer table and column names come only from literal allowlists. Reset/verification tokens are cryptographically random, stored as SHA-256 hashes, expire, and are consumed only on POST. Uploaded images are size/dimension/MIME checked and re-encoded with GD into new JPEGs in private storage. SVG uploads and path traversal are rejected.
 
@@ -45,3 +45,5 @@ Real SMTP delivery, physical phone camera permissions and an online payment gate
 - [OWASP CSRF Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)
 - [OWASP Session Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)
 - [PHP password_hash documentation](https://www.php.net/manual/en/function.password-hash.php)
+
+See [upstream integration notes](UPSTREAM_INTEGRATION.md) for migration compatibility and the lifetime waiting-list refill budget.

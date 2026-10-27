@@ -79,6 +79,29 @@ try:
  from PIL import Image
  out=io.BytesIO();Image.new('RGB',(160,160),(230,100,130)).save(out,format='PNG');r=post(creator,'photo.php?id='+str(ce),{'artwork':'cinema'},files={'cover':('safe.png',out.getvalue(),'image/png')});check(r.status_code==302,'safe image uploaded');image=scalar('SELECT image_path FROM events WHERE event_id=?',[ce]);r=get(guest,'media.php?image='+image);check(r.status_code==200 and r.content[:3]==b'\xff\xd8\xff','uploaded image re-encoded to JPEG');check(get(guest,'media.php?image=../../config.php').status_code==404,'image path traversal denied')
 
+ # Preserve features added concurrently on the team branch.
+ check(get(admin,'scan.php').status_code==403,'admin cannot perform staff admission work')
+ check(get(admin,'attendees.php?event_id='+str(qid)).status_code==403,'admin cannot access working guest list')
+ r=get(guest,'index.php?low_data=1');check('<img ' not in r.text,'low-data discovery omits image elements')
+ check(get(guest,'index.php?date=today').status_code==200,'legacy today filter remains supported')
+ check(get(guest,'index.php?date=weekend').status_code==200,'legacy weekend filter remains supported')
+ draft_payload={'title':'Draft '+stamp,'description':'Private drafting','start_time':time.strftime('%Y-%m-%dT19:00',time.gmtime(time.time()+86400*30)),'location':'Studio','capacity':'100','category':'Learning','artwork':'digital','intent':'save_draft','social_url':'https://example.org/event'}
+ post(creator,'event_form.php',draft_payload);draft=int(scalar('SELECT event_id FROM events WHERE title=?',['Draft '+stamp]));check(scalar('SELECT status FROM events WHERE event_id=?',[draft])=='draft','creator saves a private draft');check(get(guest,'event.php?id='+str(draft)).status_code==404,'draft hidden from public')
+ draft_payload.update({'event_id':draft,'intent':'submit'});post(creator,'event_form.php?id='+str(draft),draft_payload);check(scalar('SELECT status FROM events WHERE event_id=?',[draft])=='pending','draft submits for review')
+ post(admin,'admin_action.php',{'action':'approve','event_id':draft});check('https://example.org/event' in get(guest,'event.php?id='+str(draft)).text,'approved social link displayed safely')
+ draft_payload['social_url']='javascript:alert(1)';check('HTTP or HTTPS URL' in post(creator,'event_form.php?id='+str(draft),draft_payload).text,'unsafe social link rejected')
+ # The eleventh automatic promotion remains blocked even after capacity grows.
+ budget=event('Lifetime refill '+stamp,120);db('UPDATE events SET original_capacity=100,refill_count=9 WHERE event_id=?',[budget])
+ for uid in [u1_id,u2_id]:db('INSERT INTO bookings(event_id,user_id)VALUES(?,?)',[budget,uid])
+ for uid in [u3_id,reg_id]:db('INSERT INTO waiting_list(event_id,user_id)VALUES(?,?)',[budget,uid])
+ # A registered creator cannot be promoted as an attendee; use another test attendee for FIFO successor.
+ db('DELETE FROM waiting_list WHERE event_id=? AND user_id=?',[budget,reg_id]);later,later_email=create('later');db('INSERT INTO waiting_list(event_id,user_id)VALUES(?,?)',[budget,later])
+ first_bid=int(scalar('SELECT booking_id FROM bookings WHERE event_id=? AND user_id=?',[budget,u1_id]));post(u1,'cancel_booking.php',{'booking_id':first_bid});check(scalar('SELECT refill_count FROM events WHERE event_id=?',[budget])==10,'tenth automatic promotion counted')
+ second_bid=int(scalar('SELECT booking_id FROM bookings WHERE event_id=? AND user_id=?',[budget,u2_id]));post(u2,'cancel_booking.php',{'booking_id':second_bid});check(scalar('SELECT refill_count FROM events WHERE event_id=?',[budget])==10 and scalar('SELECT COUNT(*) FROM waiting_list WHERE event_id=? AND user_id=?',[budget,later])==1,'eleventh automatic promotion blocked after capacity increase')
+ legacy_name=('b'*32)+'.png';legacy_file=ROOT/'uploads'/legacy_name;Image.new('RGB',(160,160),(100,150,200)).save(legacy_file)
+ try:
+  db('UPDATE events SET poster_path=?,image_path=NULL WHERE event_id=?',['uploads/'+legacy_name,ce]);check(get(guest,'media.php?poster='+legacy_name).status_code==200,'existing team poster remains readable through controlled media route');check(get(guest,'uploads/'+legacy_name).status_code==404,'legacy uploads cannot be requested directly')
+ finally:legacy_file.unlink(missing_ok=True)
  # Remaining creator/admin lifecycle and migration-sensitive fields.
  post(admin,'admin_action.php',{'action':'approve_society','user_id':reg_id,'reference':'TEST-SOCIETY-EVIDENCE'})
  check(scalar('SELECT plan_code FROM creator_plans WHERE user_id=?',[reg_id])=='verified_society','verified school society approved separately by admin')
@@ -97,7 +120,7 @@ try:
  post(u2,'leave_waitlist.php',{'event_id':refill});check(scalar('SELECT COUNT(*) FROM waiting_list WHERE event_id=?',[refill])==0,'user can leave own waiting list')
  # A disabled attendee's still-current signed ticket must not be admitted.
  did,demail=create('disabled');disabled=login(demail);de=event('Disabled account ticket '+stamp,2);post(disabled,'booking_action.php',{'event_id':de,'action':'book'});dbid=int(scalar('SELECT booking_id FROM bookings WHERE event_id=?',[de]));dtoken=post(disabled,'ticket_qr.php',{'booking_id':dbid}).json()['token'];post(admin,'admin_action.php',{'action':'set_active','user_id':did,'active':'0'});check('login.php' in get(disabled,'account.php').url,'disabled account session invalidated');check('no longer exists' in post(staff,'scan.php',{'token':dtoken}).text,'disabled account cannot redeem a previously issued token')
- cancel=event('Cancelled '+stamp,2);post(u1,'booking_action.php',{'event_id':cancel,'action':'book'});cb=int(scalar('SELECT booking_id FROM bookings WHERE event_id=?',[cancel]));post(creator,'organiser_action.php',{'event_id':cancel,'action':'cancel'});check(scalar('SELECT status FROM events WHERE event_id=?',[cancel])=='removed','creator cancellation removes event');check(post(u1,'ticket_qr.php',{'booking_id':cb}).status_code==409,'cancelled event stops ticket issue');check('Event cancelled:' in get(u1,'notifications.php').text,'event cancellation notifies attendees');check(get(u1,'event.php?id='+str(cancel)).status_code==200,'booked attendee can still view cancellation details')
+ cancel=event('Cancelled '+stamp,2);post(u1,'booking_action.php',{'event_id':cancel,'action':'book'});cb=int(scalar('SELECT booking_id FROM bookings WHERE event_id=?',[cancel]));post(creator,'organiser_action.php',{'event_id':cancel,'action':'cancel'});check(scalar('SELECT status FROM events WHERE event_id=?',[cancel])=='cancelled','creator cancellation preserves cancelled state');check(post(u1,'ticket_qr.php',{'booking_id':cb}).status_code==409,'cancelled event stops ticket issue');check('Event cancelled:' in get(u1,'notifications.php').text,'event cancellation notifies attendees');check(get(u1,'event.php?id='+str(cancel)).status_code==200,'booked attendee can still view cancellation details')
  # Expiry and cookie scope are enforced by the server, independent of the browser.
  def session_state(s,expire=''):
   request={'session_id':s.cookies.get('FAIRBOARDSESSID'),'expire':expire}

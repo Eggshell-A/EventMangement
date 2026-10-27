@@ -4,5 +4,7 @@
 !/storage/.htaccess
 /node_modules/
 /test-results/
+/uploads/*
+!/uploads/.gitignore
 *.log
 .env

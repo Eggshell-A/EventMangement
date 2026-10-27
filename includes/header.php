@@ -9,7 +9,7 @@ if(isLoggedIn()){$navNotificationQuery=$pdo->prepare('SELECT COUNT(*) FROM notif
 <?php if(isRole('creator')):?><a href="dashboard.php">My events</a><a href="event_form.php">Create event</a><?php endif;?>
 <?php if(isRole('staff')):?><a href="staff.php">Assigned events</a><?php endif;?>
 <?php if(isRole('admin')):?><a href="admin.php">Admin</a><?php endif;?>
-<?php if(in_array(currentUser()['role'],['creator','staff','admin'],true)):?><a href="scan.php">Scanner</a><?php endif;?>
+<?php if(in_array(currentUser()['role'],['creator','staff'],true)):?><a href="scan.php">Scanner</a><?php endif;?>
 <?php if(isDeveloper()):?><a class="dev-badge" href="developer.php">SQL <span>DEV</span></a><?php endif;?>
 <a href="notifications.php" aria-label="Updates<?= $unread?' · '.$unread.' unread':''?>">Updates<?php if($unread):?><span class="count"><?=min($unread,99)?></span><?php endif;?></a><a class="avatar" href="account.php" aria-label="Your account"><?=e(mb_strtoupper(mb_substr(currentUser()['name'],0,1)))?></a><form class="inline-form" method="post" action="logout.php"><?=csrfField()?><button class="nav-logout" type="submit">Log out</button></form>
 <?php else:?><span class="nav-divider"></span><a href="login.php">Log in</a><a class="button small" href="register.php">Join Fairboard ↗</a><?php endif;?></nav></div></header>

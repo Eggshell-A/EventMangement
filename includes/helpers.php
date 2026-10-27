@@ -39,7 +39,7 @@ function safeEventNext(mixed $value): ?string {
     return $value === 'scan.php' ? 'scan.php' : null;
 }
 function loginRedirectFor(array $user, ?string $next): string {
-    if ($next === 'scan.php' && in_array($user['role'] ?? '', ['admin','creator','staff'], true)) return $next;
+    if ($next === 'scan.php' && in_array($user['role'] ?? '', ['creator','staff'], true)) return $next;
     if (($user['role'] ?? '') === 'user' && $next) {
         return $next;
     }
@@ -56,7 +56,7 @@ function planFeeLabel(?string $plan): string {
 }
 function posterTone(string $title): int { return (int) (abs(crc32($title)) % 6); }
 function eventCardSql(): string {
-    return 'SELECT e.event_id, e.organiser_id, e.title, e.description, e.start_time, e.location, e.capacity, e.status, e.category, e.artwork, e.image_path, u.name AS organiser_name, p.organisation_name, p.plan_code, (SELECT COUNT(*) FROM bookings b WHERE b.event_id = e.event_id) AS booking_count, (SELECT COUNT(*) FROM waiting_list w WHERE w.event_id = e.event_id) AS waiting_count FROM events e JOIN users u ON u.user_id = e.organiser_id LEFT JOIN creator_plans p ON p.user_id = e.organiser_id';
+    return 'SELECT e.event_id, e.organiser_id, e.title, e.description, e.start_time, e.location, e.capacity, e.status, e.category, e.artwork, e.image_path, e.original_capacity, e.refill_count, e.poster_path, e.social_url, u.name AS organiser_name, p.organisation_name, p.plan_code, (SELECT COUNT(*) FROM bookings b WHERE b.event_id = e.event_id) AS booking_count, (SELECT COUNT(*) FROM waiting_list w WHERE w.event_id = e.event_id) AS waiting_count FROM events e JOIN users u ON u.user_id = e.organiser_id LEFT JOIN creator_plans p ON p.user_id = e.organiser_id';
 }
 function placesLeft(array $event): int { return max(0, (int) $event['capacity'] - (int) $event['booking_count']); }
 function organisationName(array $event): string {
@@ -65,15 +65,17 @@ function organisationName(array $event): string {
 }
 
 function canManageAttendees(PDO $pdo, array $event): bool {
-    return isEventOwnerOrAdmin($event) || staffAssistsCreator($pdo, (int)$event['organiser_id']);
+    return canEditEvent($pdo,$event);
 }
-function categories(): array { return ['Music','Film','Arts','Technology','Community','Outdoors']; }
+function categories(): array { return ['Music','Film','Arts','Technology','Community','Outdoors','Learning','Sports','Social','Other']; }
 function artworkChoices(): array { return ['concert','cinema','gallery','digital','city','nature']; }
 function eventArtwork(array $event): string {
     if (!empty($event['image_path'])) return 'media.php?image=' . rawurlencode($event['image_path']);
+    if (!empty($event['poster_path']) && preg_match('~^uploads/([a-f0-9]{32}\.(?:jpg|png|webp))$~D',$event['poster_path'],$m)) return 'media.php?poster='.rawurlencode($m[1]);
     $art = $event['artwork'] ?? 'concert';
     return 'assets/art/' . (in_array($art, artworkChoices(), true) ? $art : 'concert') . '.svg';
 }
+function validEventUrl(string $url): bool { return $url==='' || (strlen($url)<=500 && filter_var($url,FILTER_VALIDATE_URL) && in_array(strtolower((string)parse_url($url,PHP_URL_SCHEME)),['http','https'],true)); }
 function notifyUser(PDO $pdo, int $userId, string $message, ?int $eventId = null): void {
     $pdo->prepare('INSERT INTO notifications (user_id,message,event_id) VALUES (?,?,?)')->execute([$userId,$message,$eventId]);
 }

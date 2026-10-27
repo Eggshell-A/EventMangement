@@ -4,4 +4,4 @@ Options -Indexes -MultiViews
 </FilesMatch>
 RewriteEngine On
 RewriteRule (^|/)\. - [F,L]
-RewriteRule ^(?:storage|includes|tools|tests|database|migrations|docs|vendor|\.git)(?:/|$) - [F,L]
+RewriteRule ^(?:storage|uploads|includes|tools|tests|database|migrations|docs|vendor|\.git)(?:/|$) - [F,L]

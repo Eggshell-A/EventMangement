@@ -4,13 +4,13 @@ The release was executed locally with PHP 8.3, MariaDB 10.11 (InnoDB), four PHP 
 
 | Check | Result |
 |---|---|
-| HTTP/database integration (`tests/integration.py`) | 139 assertions passed |
-| Real browser flows (`tests/browser.cjs`) | 62 assertions passed; no JavaScript or CSP console errors |
-| Security boundary unit tests (`tests/security_unit.php`) | 26 assertions passed |
+| HTTP/database integration (`tests/integration.py`) | 153 assertions passed |
+| Real browser flows (`tests/browser.cjs`) | 67 assertions passed; no JavaScript or CSP console errors |
+| Security boundary unit tests (`tests/security_unit.php`) | 34 assertions passed |
 | Existing role matrix (`tests/role_access_test.php`) | Passed |
-| Database migration (`tests/migration.php`) | Existing records preserved through two consecutive migrations; legacy roles mapped; creator plan backfilled; new tables present |
+| Database migration (`tests/migration.php`) | Existing records preserved through two consecutive migrations; legacy roles mapped; creator plan backfilled; new tables present; the newer team redesign schema also migrated twice, preserving draft/cancelled states, original capacity/refill counts, categories, posters and social URLs |
 | Fresh database import | All 12 application tables created |
-| PHP syntax | 51 source/test PHP files passed |
+| PHP syntax | 64 source/test PHP files passed |
 | JavaScript syntax / SVG XML | Application scripts and browser suite passed; all 7 local SVG files parsed |
 | Composer | Lockfile validation passed; audit reported no known vulnerability advisories for locked packages |
 | Patch whitespace | `git diff --check` passed |
@@ -21,7 +21,7 @@ Composer's metadata validation still reports the repository's unspecified projec
 
 The HTTP suite checks public discovery, malformed inputs, sensitive-path denial, CSRF enforcement on 20 POST entry points, registration and role restrictions, email ownership, single-use reset/verification tokens, password-reset session revocation, cookie attributes, idle and absolute expiry, persistent rate limits, and immediate staff/account revocation.
 
-Booking checks send concurrent requests from independent sessions for the last seat and verify there is exactly one booking. Cancellation promotes the oldest eligible waiting attendee. Tests cover duplicate requests, private booking/ticket access, waiting-list departure, a refill capped at 10%, accurate booking audit references and refusal to reduce capacity below existing bookings.
+Booking checks send concurrent requests from independent sessions for the last seat and verify there is exactly one booking. Cancellation promotes the oldest eligible waiting attendee. Tests cover duplicate requests, private booking/ticket access, waiting-list departure, the event-lifetime refill budget capped at 10% of original capacity, accurate booking audit references and refusal to reduce capacity below existing bookings.
 
 Admission checks cover altered signatures, real elapsed expiry, a new code after the 30-second boundary, unassigned staff, disabled attendees, cancelled events and two concurrent attempts to redeem the same ticket. Exactly one check-in succeeds. Background ticket polling does not renew the idle deadline.
 
@@ -29,7 +29,7 @@ Creator/admin checks cover creation, approval, reapproval after a material edit,
 
 The developer explorer requires its own password check. Tests verify table/column allowlisting, hidden sensitive row values, numeric pagination and rejection of an injected table identifier. Ordinary users cannot open it; production and non-allowlisted access are checked in unit tests.
 
-The browser suite exercises search/category controls, password reveal and confirmation feedback, creator registration fields, responsive menus, login/logout, account pages, creator forms, posters, invoices, scanner fallback and the SQL explorer. Discovery, login and registration fit 320px and 390px screens; ticket and admin layouts fit 390px. It decodes the **actual rendered admission QR** with the bundled jsQR decoder and waits for an automatic refresh to a different signed code. All displayed artwork loads. The generated print poster is one A4 page.
+The browser suite exercises search/category controls, password reveal and confirmation feedback, creator registration fields, responsive menus, login/logout, account pages, creator forms, posters, invoices, scanner fallback and the SQL explorer. Low-data mode emits no artwork image elements; draft and social-link fields remain available. Discovery, login and registration fit 320px and 390px screens; ticket and admin layouts fit 390px. It decodes the **actual rendered admission QR** with the bundled jsQR decoder and waits for an automatic refresh to a different signed code. All displayed artwork loads. The generated print poster is one A4 page.
 
 ## Visual review
 
@@ -50,3 +50,5 @@ Follow [README setup and test commands](../README.md#tests), using a separate de
 MySQL 8, Apache/Nginx hosting rules on a deployed host, external SMTP delivery, real phone camera permissions and online payment processing were not exercised. The local router's private-path rules, local mail-token flows, rendered QR decoder and offline payment ledger were exercised. The deployment configurations and operator steps are supplied for the target environment.
 
 This is application testing, not an independent penetration test or a guarantee that no vulnerabilities remain. Rotating QR codes cannot prevent relay of a still-valid code. Production needs its own HTTPS, secret configuration, database privileges, mail transport and operational backups as described in [release notes](RELEASE.md).
+
+Retained upstream policy, media and QR helper checks also passed. The retained SQLite-backed catalog/access/booking helper suites were not executed completely because PDO SQLite was unavailable; they are separate from the active MariaDB/HTTP regression suite above. No claim of passing those optional SQLite suites is made.

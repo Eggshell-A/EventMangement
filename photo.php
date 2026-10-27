@@ -12,7 +12,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    $ratio=min(1,1600/max($info[0],$info[1]));$width=(int)round($info[0]*$ratio);$height=(int)round($info[1]*$ratio);$out=imagecreatetruecolor($width,$height);imagecopyresampled($out,$source,0,0,0,0,$width,$height,$info[0],$info[1]);
    $dir=__DIR__.'/storage/covers';if(!is_dir($dir))mkdir($dir,0700,true);$image=bin2hex(random_bytes(16)).'.jpg';if(!imagejpeg($out,$dir.'/'.$image,88))throw new RuntimeException('Cannot save image.');chmod($dir.'/'.$image,0600);imagedestroy($source);imagedestroy($out);
   }
-  withEventLock($pdo,$id,function($locked)use($pdo,$id,$art,$image){if(!$locked||!canEditEvent($pdo,$locked))throw new BookingAccessDenied();$pdo->prepare('UPDATE events SET artwork=?,image_path=? WHERE event_id=?')->execute([$art,$image,$id]);audit($pdo,'event.artwork',$id);});
+  withEventLock($pdo,$id,function($locked)use($pdo,$id,$art,$image){if(!$locked||!canEditEvent($pdo,$locked))throw new BookingAccessDenied();$pdo->prepare('UPDATE events SET artwork=?,image_path=?,poster_path=NULL WHERE event_id=?')->execute([$art,$image,$id]);audit($pdo,'event.artwork',$id);});
   flash('Cover saved. The event page and printed poster now use this artwork.');redirect('photo.php?id='.$id);
  }catch(DomainException $e){$error=$e->getMessage();}catch(BookingAccessDenied $e){abortRequest(403,'Access changed.');}
 }

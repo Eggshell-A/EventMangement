@@ -18,7 +18,7 @@ A PHP + MySQL community event platform with a cinematic discovery interface, com
 5. For development, optionally run `php tools/seed_demo.php`. It creates sample events and prints a randomly generated password for newly created `.test` accounts. Existing accounts are not overwritten.
 6. Start `php -S 127.0.0.1:8080 router.php` and set `base_url` to `http://127.0.0.1:8080`, or serve with Apache and the included `.htaccess`.
 
-For an existing database, back up both the database and uploaded covers, install the code/dependencies, then run:
+For an existing database, back up both the database and uploaded covers and any existing `uploads/` posters, install the code/dependencies, then run:
 
 ```sh
 php tools/migrate.php
@@ -32,11 +32,11 @@ The migration adds missing columns/tables, maps legacy roles, and backfills crea
 
 | Area | Behaviour |
 |---|---|
-| Discovery | Featured event, category filters, escaped keyword search, date filters, popular sorting, pagination, original illustrated covers, desktop/mobile navigation |
+| Discovery | Featured event, category filters, escaped keyword search, today/weekend/date filters and low-data mode, popular sorting, pagination, original illustrated covers, desktop/mobile navigation |
 | Accounts | Attendee/creator registration, organisation profile, confirmation field, show/hide password, login return path, email verification, password reset, password change, logout |
-| Bookings | One place per user, event-row locks, waiting list, leave/cancel, FIFO promotion, in-app notifications, capacity refills capped at 10% per request |
-| Admission | Private QR tickets rotate at 30-second server-time boundaries; assigned staff, owner or admin can redeem once; camera scanner and pasted-code fallback |
-| Creator / staff | Event creation, assigned editing, moderation after material changes, cover selection/upload, printable event posters, attendee lists |
+| Bookings | One place per user, event-row locks, waiting list, leave/cancel, FIFO promotion, in-app notifications, FIFO promotions capped at 10% of original capacity for the event’s lifetime |
+| Admission | Private QR tickets rotate at 30-second server-time boundaries; assigned staff or owner can redeem once; camera scanner and pasted-code fallback |
+| Creator / staff | Draft/submit creation, event website links, assigned editing, moderation after material changes, cover selection/upload, printable event posters, attendee lists |
 | Admin | Event moderation, staff assignment/revocation, account disabling, verified school-society approval, offline invoice/payment records |
 | Developer | `SQL DEV` navigation button for explicitly allowlisted development admins; password reauthentication; table schemas/counts/paginated safe rows |
 
