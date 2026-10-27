@@ -213,4 +213,3 @@
 - Type consistency: shared security, access, booking and catalog interfaces are defined once and consumed by later tasks.
 - Review focus: concurrency, manual ID attacks, refill accounting, disabled sessions and malformed filters each have an owning test.
 - Proportion: the plan chooses file boundaries, interfaces and proof points without transcribing implementation bodies.
-

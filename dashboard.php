@@ -1,38 +1,9 @@
 <?php
-require __DIR__ . '/includes/bootstrap.php';
-requireRole('creator');
-$statement = $pdo->prepare('SELECT e.*, COUNT(DISTINCT b.booking_id) booking_count, COUNT(DISTINCT w.entry_id) waiting_count FROM events e LEFT JOIN bookings b ON b.event_id = e.event_id LEFT JOIN waiting_list w ON w.event_id = e.event_id WHERE e.organiser_id = ? GROUP BY e.event_id ORDER BY e.start_time DESC');
-$statement->execute([currentUser()['user_id']]);
-$events = $statement->fetchAll();
-$pageTitle = 'My events';
-require __DIR__ . '/includes/header.php';
-?>
-<div class="page-head">
-  <h1>My events</h1>
-  <a class="button" href="event_form.php">Create event</a>
-</div>
-<?php if (!$events): ?>
-  <p class="notice">You have not created any events.</p>
-<?php else: ?>
-  <ul class="mine-list">
-    <?php foreach ($events as $event): $remaining = max(0, (int) $event['capacity'] - (int) $event['booking_count']); ?>
-      <li class="mine-card">
-        <div>
-          <strong><?= e($event['title']) ?></strong>
-          <p class="meta"><?= e(date('D j M Y, H:i', strtotime($event['start_time']))) ?> · <?= e($event['location']) ?></p>
-          <p><span class="status <?= e($event['status']) ?>"><?= e($event['status']) ?></span> · <?= (int) $event['booking_count'] ?> / <?= (int) $event['capacity'] ?> booked · <?= $remaining ?> left · <?= (int) $event['waiting_count'] ?> waiting</p>
-        </div>
-        <div class="event-actions">
-          <a class="action-btn edit" href="event_form.php?id=<?= (int) $event['event_id'] ?>">Edit</a>
-          <a class="action-btn attendees" href="attendees.php?event_id=<?= (int) $event['event_id'] ?>">Attendees</a>
-          <?php if ($event['status'] === 'approved'): ?>
-            <a class="action-btn print" href="poster.php?id=<?= (int) $event['event_id'] ?>">Print poster</a>
-          <?php else: ?>
-            <a class="action-btn print" href="photo.php?id=<?= (int) $event['event_id'] ?>">Print poster</a>
-          <?php endif; ?>
-        </div>
-      </li>
-    <?php endforeach; ?>
-  </ul>
-<?php endif; ?>
-<?php require __DIR__ . '/includes/footer.php';
+require __DIR__.'/includes/bootstrap.php';requireRole('creator');$q=$pdo->prepare(eventCardSql().' WHERE e.organiser_id=? ORDER BY e.start_time DESC');$q->execute([currentUser()['user_id']]);$events=$q->fetchAll();
+$pageTitle='Your events';require __DIR__.'/includes/header.php';?>
+<div class="page-head"><div><p class="eyebrow">THE CREATOR'S CORNER</p><h1>Make it happen.</h1></div><div class="actions"><a class="button secondary" href="billing.php">Creator plan</a><a class="button" href="event_form.php">+ Create event</a></div></div>
+<div class="stats-grid"><div class="stat"><strong><?=count($events)?></strong><span>Your events</span></div><div class="stat"><strong><?=array_sum(array_column($events,'booking_count'))?></strong><span>Confirmed guests</span></div><div class="stat"><strong><?=array_sum(array_column($events,'waiting_count'))?></strong><span>On waiting lists</span></div></div>
+<?php if(!$events):?><div class="empty-state"><span>✦</span><h3>Your first event starts here.</h3><p>Bring your idea to life. We'll help you bring people together.</p><a class="button" href="event_form.php">Create an event ↗</a></div><?php endif;?><ul class="mine-list"><?php foreach($events as $event):$id=(int)$event['event_id'];?><li class="mine-card"><div><p class="eyebrow"><?=e($event['category'])?></p><h2><a href="event.php?id=<?=$id?>"><?=e($event['title'])?></a></h2><p class="meta"><?=e(date('D j M Y · H:i',strtotime($event['start_time'])))?> · <?=e($event['location'])?></p><p><span class="status <?=e($event['status'])?>"><?=e($event['status'])?></span> <span class="muted">· <?=(int)$event['booking_count']?> / <?=(int)$event['capacity']?> guests · <?=(int)$event['waiting_count']?> waiting</span></p>
+<div class="event-actions"><a class="action-btn" href="event_form.php?id=<?=$id?>">Edit event</a><a class="action-btn" href="attendees.php?event_id=<?=$id?>">Guests & check-in</a><a class="action-btn" href="photo.php?id=<?=$id?>">Cover studio</a><?php if($event['status']==='approved'):?><a class="action-btn" href="poster.php?id=<?=$id?>">Print poster</a><?php endif;?></div>
+<?php if(strtotime($event['start_time'])>time()&&!in_array($event['status'],['removed','cancelled'],true)):?><details><summary>Capacity & cancellation</summary><p class="fine-print"><?=waitingRefillRemaining($event)?> waiting-list promotions remain out of <?=waitingRefillLimit($event)?> for this event. Increasing capacity does not reset this allowance.</p><form method="post" action="organiser_action.php"><?=csrfField()?><input type="hidden" name="event_id" value="<?=$id?>"><input type="hidden" name="action" value="add_places"><label for="places-<?=$id?>">Add places (up to <?=max(0,100000-(int)$event['capacity'])?> more places)</label><input id="places-<?=$id?>" name="add_places" type="number" min="1" max="<?=max(0,100000-(int)$event['capacity'])?>" value="1" required><button class="secondary">Add places & promote waitlist</button></form><form method="post" action="organiser_action.php" data-confirm="Cancel this event? All guests will be notified."><?=csrfField()?><input type="hidden" name="event_id" value="<?=$id?>"><input type="hidden" name="action" value="cancel"><button class="danger">Cancel event</button></form></details><?php endif;?></div></li><?php endforeach;?></ul>
+<?php require __DIR__.'/includes/footer.php';?>

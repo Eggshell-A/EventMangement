@@ -1,3 +1,5 @@
+> Historical Week 2 report. For the current implementation and validation, see [RELEASE.md](RELEASE.md) and [TEST_REPORT.md](TEST_REPORT.md).
+
 # Cybersecurity report, week 2
 
 ## Week 1 code audit

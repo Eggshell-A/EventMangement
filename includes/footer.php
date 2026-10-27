@@ -1,9 +1,1 @@
-</main>
-<footer class="site-footer">
-  <div class="container footer-inner">
-    <div><strong>Fairboard</strong><span>Events made easier to find, fill, and run.</span></div>
-    <p>Reservations are free unless an organiser says otherwise. Fairboard does not collect ticket payments.</p>
-  </div>
-</footer>
-</body>
-</html>
+</main><footer class="site-footer"><div class="container footer-main"><div><a class="brand" href="index.php"><span class="brand-icon" aria-hidden="true">f</span>fairboard<span class="brand-dot">.</span></a><p>A little curiosity.<br>A lot to look forward to.</p></div><div class="footer-links"><a href="index.php">Find an event</a><a href="<?=isRole('creator')?'event_form.php':'register.php'?>">Bring people together</a><a href="<?=isLoggedIn()?'account.php':'login.php'?>">Your account</a></div><div class="footer-note"><span class="eyebrow">GO MAKE A MEMORY</span><p>Community, culture & everything in between.</p></div></div><div class="container footer-bottom"><span>© <?=date('Y')?> Fairboard · Built for real life.</span><span>Event times: <?=e($config['timezone']??'Asia/Hong_Kong')?></span></div></footer></body></html>

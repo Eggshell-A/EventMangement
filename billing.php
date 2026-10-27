@@ -1,0 +1,20 @@
+<?php
+require __DIR__.'/includes/bootstrap.php';requireLogin();if(!isRole('creator')&&!isRole('admin'))abortRequest(403,'Creator or admin access required.');
+$plan=null;if(isRole('creator')){$q=$pdo->prepare('SELECT * FROM creator_plans WHERE user_id=?');$q->execute([currentUser()['user_id']]);$plan=$q->fetch();}
+if($_SERVER['REQUEST_METHOD']==='POST'){
+ $action=postString('action');
+ if($action==='request_invoice'&&isRole('creator')){
+  if(!$plan)abortRequest(409,'Ask an administrator to set up your creator plan.');
+  $waived=$plan['plan_code']==='verified_society';
+  $q=$pdo->prepare('INSERT IGNORE INTO creator_invoices(user_id,billing_month,amount_cents,status)VALUES(?,?,?,?)');$q->execute([currentUser()['user_id'],date('Y-m-01'),$waived?0:8000,$waived?'waived':'unpaid']);
+  if($q->rowCount())audit($pdo,'invoice.create',(int)$pdo->lastInsertId());flash('Your current month invoice is ready.');
+ }elseif($action==='record_payment'&&isRole('admin')){
+  $id=postPositiveInt('invoice_id');$reference=trim(postString('reference'));if($reference===''||mb_strlen($reference)>120)abortRequest(400,'Enter a payment reference of up to 120 characters.');
+  $pdo->beginTransaction();$q=$pdo->prepare("UPDATE creator_invoices SET status='paid',reference=?,recorded_by=?,recorded_at=NOW() WHERE invoice_id=? AND status='unpaid'");$q->execute([$reference,currentUser()['user_id'],$id]);if($q->rowCount()!==1){$pdo->rollBack();abortRequest(409,'Invoice is already settled or unavailable.');}audit($pdo,'invoice.paid',$id);$pdo->commit();flash('Offline payment recorded.');
+ }else abortRequest(403,'Action not allowed.');redirect('billing.php');
+}
+$sql='SELECT i.*,u.name FROM creator_invoices i JOIN users u ON u.user_id=i.user_id';$q=$pdo->prepare($sql.(isRole('creator')?' WHERE i.user_id=?':'').' ORDER BY billing_month DESC,invoice_id DESC LIMIT 100');$q->execute(isRole('creator')?[currentUser()['user_id']]:[]);$invoices=$q->fetchAll();
+$pageTitle='Creator plan';require __DIR__.'/includes/header.php';?>
+<div class="page-head"><div><p class="eyebrow">ROOM FOR YOUR NEXT IDEA</p><h1><?=isRole('admin')?'Creator invoices.':'Your creator plan.'?></h1></div></div><?php if(isRole('creator')):?><section class="panel"><span class="pill"><?=e(($plan['plan_code']??'')==='verified_society'?'Verified society':'External group')?></span><h2 class="invoice-amount"><?=$plan&&($plan['plan_code']??'')==='verified_society'?'HK$0':'HK$80'?> <span class="muted">/ month</span></h2><p>School societies can request approval after verifying a school email address.</p><form method="post"><?=csrfField()?><input type="hidden" name="action" value="request_invoice"><button>Get this month's invoice</button></form></section><?php endif;?><p class="notice">Payments are collected offline by the organiser's administrator and recorded with a receipt reference. No card details are collected and this page does not charge your account.</p>
+<div class="table-wrap"><table><thead><tr><th>Invoice</th><th>Creator</th><th>Month</th><th>Amount</th><th>Status</th><th>Receipt</th></tr></thead><tbody><?php foreach($invoices as $i):?><tr><td>#<?=(int)$i['invoice_id']?></td><td><?=e($i['name'])?></td><td><?=e(date('M Y',strtotime($i['billing_month'])))?></td><td>HK$<?=number_format($i['amount_cents']/100,2)?></td><td><?=e($i['status'])?></td><td><?php if(isRole('admin')&&$i['status']==='unpaid'):?><form method="post"><?=csrfField()?><input type="hidden" name="action" value="record_payment"><input type="hidden" name="invoice_id" value="<?=(int)$i['invoice_id']?>"><label class="sr-only" for="ref-<?=(int)$i['invoice_id']?>">Receipt reference</label><input id="ref-<?=(int)$i['invoice_id']?>" name="reference" placeholder="Receipt reference" maxlength="120" required><button class="secondary small">Record received payment</button></form><?php else:?><?=e($i['reference']??'—')?><?php endif;?></td></tr><?php endforeach;?><?php if(!$invoices):?><tr><td colspan="6">No invoices yet.</td></tr><?php endif;?></tbody></table></div>
+<?php require __DIR__.'/includes/footer.php';?>

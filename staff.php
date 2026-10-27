@@ -8,11 +8,11 @@ $events = $statement->fetchAll();
 $pageTitle = 'Staff';
 require __DIR__ . '/includes/header.php';
 ?>
-<h1>Assigned events</h1>
+<p class="eyebrow">YOUR TEAM, YOUR EVENTS</p><h1>Assigned events.</h1><p><a class="button" href="scan.php">Open scanner ↗</a></p>
 <?php if (!$events): ?><p class="notice">No events are assigned to you.</p><?php else: ?>
-<table><thead><tr><th>Event</th><th>Creator</th><th>Status</th><th class="no-print">Assist</th></tr></thead><tbody>
+<div class="table-wrap"><table><thead><tr><th>Event</th><th>Creator</th><th>Status</th><th class="no-print">Assist</th></tr></thead><tbody>
 <?php foreach ($events as $event): ?>
-<tr><td><strong><?= e($event['title']) ?></strong><br><span class="muted"><?= e(date('j M Y, H:i', strtotime($event['start_time']))) ?> · <?= e($event['location']) ?></span></td><td><?= e($event['creator_name']) ?></td><td><span class="status <?= e($event['status']) ?>"><?= e($event['status']) ?></span></td><td class="no-print"><div class="event-actions"><a class="action-btn edit" href="event_form.php?id=<?= (int) $event['event_id'] ?>">Edit</a><a class="action-btn attendees" href="attendees.php?event_id=<?= (int) $event['event_id'] ?>">Attendees & check-in</a><a class="action-btn print" href="poster.php?id=<?= (int) $event['event_id'] ?>">Promotion kit</a></div></td></tr>
+<tr><td><strong><?= e($event['title']) ?></strong><br><span class="muted"><?= e(date('j M Y, H:i', strtotime($event['start_time']))) ?> · <?= e($event['location']) ?></span></td><td><?= e($event['creator_name']) ?></td><td><span class="status <?= e($event['status']) ?>"><?= e($event['status']) ?></span></td><td class="no-print"><a class="action-btn edit" href="event_form.php?id=<?= (int) $event['event_id'] ?>">Edit</a> <a class="action-btn" href="attendees.php?event_id=<?= (int) $event['event_id'] ?>">Guests</a></td></tr>
 <?php endforeach; ?>
-</tbody></table>
+</tbody></table></div>
 <?php endif; require __DIR__ . '/includes/footer.php';

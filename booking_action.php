@@ -1,46 +1,30 @@
 <?php
-declare(strict_types=1);
-
 require __DIR__ . '/includes/bootstrap.php';
+requirePost();
 requireRole('user');
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    exit('Method not allowed.');
-}
-requireValidCsrf();
-
-$id = (int) ($_POST['event_id'] ?? 0);
-$action = $_POST['action'] ?? '';
-$userId = (int) currentUser()['user_id'];
+$id = postPositiveInt('event_id');
+$action = postString('action');
 if (!in_array($action, ['book', 'wait'], true)) {
     http_response_code(400);
     exit('Invalid action.');
 }
-
 try {
-    $result = $action === 'book'
-        ? bookEventPlace($pdo, $id, $userId)
-        : joinEventWaitlist($pdo, $id, $userId);
+    $result = bookOrWait($pdo, $id, (int) currentUser()['user_id'], $action);
 } catch (Throwable $exception) {
-    flash('Your request could not be completed. Please try again.', 'error');
-    redirect('event.php?id=' . $id);
+    serverError($exception);
 }
-
-if ($result === 'booked') {
-    flash('Your place is confirmed.');
-    redirect('booked.php?id=' . $id);
-}
-if ($result === 'waiting') {
-    flash('You are on Fairboard’s waiting list. We will keep your place in line.');
-    redirect('event.php?id=' . $id);
-}
-
 $messages = [
-    'full' => 'This event is now full. You can join the waiting list.',
-    'available' => 'A place is available. Join it instead.',
-    'already_booked' => 'You already have a confirmed place.',
-    'already_waiting' => 'You are already on the waiting list.',
-    'unavailable' => 'This event is not available.',
+    'booked' => ['Your place is confirmed.', 'success'],
+    'waiting' => ['You joined the waiting list.', 'success'],
+    'already_booked' => ['You already have a booking for this event.', 'error'],
+    'already_waiting' => ['You are already in the waiting list.', 'error'],
+    'full' => ['This event is now full. You can join the waiting list.', 'error'],
+    'available' => ['A place is available; book it instead.', 'error'],
+    'unavailable' => ['This event is not available.', 'error'],
 ];
-flash($messages[$result] ?? 'Your request could not be completed.', 'error');
-redirect($result === 'unavailable' ? 'index.php' : 'event.php?id=' . $id);
+flash(...$messages[$result]);
+redirect(match ($result) {
+    'unavailable' => 'index.php',
+    'booked' => 'booked.php?id=' . $id,
+    default => 'event.php?id=' . $id,
+});

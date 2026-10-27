@@ -1,66 +1,62 @@
 <?php
 require __DIR__ . '/includes/bootstrap.php';
 $next = safeEventNext($_POST['next'] ?? $_GET['next'] ?? null);
-if (isLoggedIn()) {
-    redirect(loginRedirectFor(currentUser(), $next));
-}
+if (isLoggedIn()) redirect(loginRedirectFor(currentUser(), $next));
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    requireValidCsrf();
-    $email = strtolower(trim($_POST['email'] ?? ''));
-    $loginKey = $email . '|' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
-    if (!loginAllowed($loginKey)) {
-        $error = 'Too many login attempts. Please wait 15 minutes and try again.';
-    }
-    $statement = $pdo->prepare('SELECT user_id, name, email, password_hash, role, is_active, failed_login_count, last_failed_login_at FROM users WHERE email=?');
-    $statement->execute([$email]);
-    $user = $statement->fetch();
-    $databaseThrottled = $user
-        && (int) $user['failed_login_count'] >= LOGIN_FAILURE_LIMIT
-        && !empty($user['last_failed_login_at'])
-        && strtotime((string) $user['last_failed_login_at']) >= time() - LOGIN_FAILURE_WINDOW;
-    if ($error === '' && !$databaseThrottled && $user && accountIsActive($user) && password_verify($_POST['password'] ?? '', $user['password_hash'])) {
-        session_regenerate_id(true);
-        $pdo->prepare('UPDATE users SET failed_login_count = 0, last_failed_login_at = NULL WHERE user_id = ?')->execute([$user['user_id']]);
-        clearLoginFailures($loginKey);
-        unset($user['password_hash']);
-        unset($user['failed_login_count'], $user['last_failed_login_at']);
-        $_SESSION['user'] = $user;
-        touchSession();
-        flash('You are now logged in.');
-        redirect(loginRedirectFor($user, $next));
-    }
-    if ($error === '') {
-        recordLoginFailure($loginKey);
-        if ($user) {
-            $pdo->prepare('UPDATE users SET failed_login_count = IF(last_failed_login_at IS NULL OR last_failed_login_at < DATE_SUB(NOW(), INTERVAL 15 MINUTE), 1, failed_login_count + 1), last_failed_login_at = NOW() WHERE user_id = ?')->execute([$user['user_id']]);
+    $email = strtolower(trim(postString('email')));
+    $password = postString('password');
+    try {
+        $retryAfter = loginRetryAfter($pdo, $email);
+        if ($retryAfter > 0) {
+            http_response_code(429);
+            header('Retry-After: ' . $retryAfter);
+            $error = 'Too many login attempts. Please try again later.';
+        } else {
+            $user = false;
+            // The same email validation used at registration also prevents collation aliases
+            // (such as Unicode accents) from bypassing the normalised account limiter.
+            if (strlen($email) <= 254 && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $statement = $pdo->prepare('SELECT user_id,name,email,password_hash,role,auth_version,is_active FROM users WHERE email=?');
+                $statement->execute([$email]);
+                $user = $statement->fetch();
+            }
+            // Verify a dummy hash for unknown accounts; do not expose account existence in errors.
+            $hash = $user['password_hash'] ?? '$2y$12$GCW3vG.lIC1FyYOHhRnxHOB62k.MpvHbeFCgPq9JOkBY94BTOo37a';
+            $valid = strlen($password) <= 72 && !str_contains($password, "\0") && password_verify($password, $hash);
+            if ($user && (int)$user['is_active'] === 1 && $valid) {
+                if (password_needs_rehash($hash, PASSWORD_BCRYPT, ['cost' => 12])) {
+                    $pdo->prepare('UPDATE users SET password_hash=? WHERE user_id=? AND password_hash=?')->execute([
+                        password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]), $user['user_id'], $hash,
+                    ]);
+                }
+                $pdo->prepare('DELETE FROM auth_rate_limits WHERE bucket_key=?')->execute([authBucketKey('login-account', $email)]);
+                establishLogin($user);
+                audit($pdo,'auth.login',(int)$user['user_id']);
+                flash('You are now logged in.');
+                redirect(loginRedirectFor($user, $next));
+            }
+            $error = 'Invalid email or password.';
         }
-        $error = $databaseThrottled
-            ? 'Too many login attempts. Please wait 15 minutes and try again.'
-            : 'Invalid email or password.';
+    } catch (Throwable $exception) {
+        serverError($exception);
     }
 }
-$pageTitle = 'Log in';
+$pageTitle = 'Welcome back';
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="auth-shell">
-  <div class="auth-intro">
-    <p class="kicker">Welcome back</p>
-    <h1>Pick up where you left off.</h1>
-    <p>User accounts manage reservations. Creator, Staff, and Admin accounts open their own workspaces after login.</p>
-    <p class="auth-switch">New to Fairboard? <a href="register.php">Create an account</a></p>
-  </div>
-  <form method="post" class="auth-card">
-    <?= csrfField() ?>
-    <h2>Log in</h2>
-    <?php if ($next): ?><p class="notice">Log in to reserve this event. You will return to it afterwards.</p><?php endif; ?>
-    <?php if ($error): ?><p class="flash error" role="alert"><?= e($error) ?></p><?php endif; ?>
-    <?php if ($next): ?><input type="hidden" name="next" value="<?= e($next) ?>"><?php endif; ?>
-    <label for="email">Email</label>
-    <input id="email" type="email" name="email" required autocomplete="email" value="<?= e($_POST['email'] ?? '') ?>">
-    <label for="password">Password</label>
-    <input id="password" type="password" name="password" required autocomplete="current-password">
-    <div class="form-actions"><button type="submit">Log in</button></div>
-  </form>
+<section class="auth-layout">
+ <div class="auth-art"><img src="assets/art/concert.svg" alt="Illustrated live music stage"><div><span class="eyebrow">GOOD PLANS START HERE</span><h2>Your next<br>great night.</h2><p>Find your people. Make a memory.</p></div></div>
+ <div class="auth-panel"><a class="text-link" href="index.php">← Back to discover</a><p class="eyebrow">THE CITY IS WAITING</p><h1>Welcome back.</h1><p class="muted">Log in to pick up where you left off.</p>
+ <?php if ($next): ?><p class="notice">Your event will be waiting after you log in.</p><?php endif; ?>
+ <form method="post" class="auth-form">
+ <?=csrfField()?><?php if($next):?><input type="hidden" name="next" value="<?=e($next)?>"><?php endif;?>
+ <?php if($error):?><p class="flash error" role="alert"><?=e($error)?></p><?php endif;?>
+ <label for="email">Email address</label><input id="email" type="email" name="email" required autocomplete="email" maxlength="254" placeholder="you@example.com" value="<?=e($_SERVER['REQUEST_METHOD']==='POST' ? $email : '')?>">
+ <div class="label-row"><label for="password">Password</label><a href="forgot_password.php">Forgot password?</a></div>
+ <div class="password-field"><input id="password" type="password" name="password" required autocomplete="current-password" maxlength="72"><button type="button" class="reveal" data-password-toggle="password" aria-label="Show password" aria-pressed="false">Show</button></div>
+ <button class="button wide" type="submit">Log in <span aria-hidden="true">↗</span></button>
+ </form><p class="auth-switch">New around here? <a href="register.php<?= $next ? '?next='.rawurlencode($next) : '' ?>">Create an account</a></p><p class="fine-print">Your account. Your plans. All in one place.</p>
+ </div>
 </section>
-<?php require __DIR__ . '/includes/footer.php';
+<?php require __DIR__.'/includes/footer.php'; ?>

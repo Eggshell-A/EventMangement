@@ -1,79 +1,27 @@
 <?php
-declare(strict_types=1);
-
-require __DIR__ . '/includes/bootstrap.php';
-$filters = normaliseCatalogFilters($_GET);
-$where = catalogWhere($filters);
-$statement = $pdo->prepare(eventCardSql() . ' ' . $where['sql'] . ' ORDER BY e.start_time ASC');
-$statement->execute($where['params']);
-$events = $statement->fetchAll();
-$pageTitle = 'Explore events';
-$bareMain = true;
-require __DIR__ . '/includes/header.php';
-?>
-<section class="explore-hero">
-  <div class="container hero-grid">
-    <div>
-      <p class="kicker">Find your next thing</p>
-      <h1>Events worth showing up for.</h1>
-      <p>Discover campus societies, practical workshops, performances, and community gatherings — with clear places left before you commit.</p>
-    </div>
-    <form class="catalog-search" method="get" action="index.php">
-      <label for="q">Search events</label>
-      <input id="q" type="search" name="q" maxlength="80" placeholder="Title, place, or keyword" value="<?= e($filters['q']) ?>">
-      <div class="filter-row">
-        <div>
-          <label for="date">When</label>
-          <select id="date" name="date">
-            <option value="">Any upcoming date</option>
-            <option value="today" <?= $filters['date'] === 'today' ? 'selected' : '' ?>>Today</option>
-            <option value="weekend" <?= $filters['date'] === 'weekend' ? 'selected' : '' ?>>This weekend</option>
-            <option value="week" <?= $filters['date'] === 'week' ? 'selected' : '' ?>>Next 7 days</option>
-          </select>
-        </div>
-        <div>
-          <label for="category">Category</label>
-          <select id="category" name="category">
-            <option value="">All categories</option>
-            <?php foreach (eventCategories() as $code => $label): ?>
-              <option value="<?= e($code) ?>" <?= $filters['category'] === $code ? 'selected' : '' ?>><?= e($label) ?></option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-      </div>
-      <label class="check-row"><input type="checkbox" name="low_data" value="1" <?= $filters['low_data'] ? 'checked' : '' ?>> Low-data list (no poster images)</label>
-      <div class="form-actions"><button type="submit">Find events</button><a class="button ghost" href="index.php">Clear</a></div>
-    </form>
-  </div>
-</section>
-
-<div class="container event-catalog">
-  <div class="catalog-heading">
-    <div>
-      <p class="kicker"><?= count($events) ?> upcoming</p>
-      <h2><?= $filters['q'] !== '' ? 'Results for “' . e($filters['q']) . '”' : 'Upcoming events' ?></h2>
-    </div>
-  </div>
-  <?php if (!$events): ?>
-    <div class="empty-state"><h3>No events match those filters.</h3><p>Try a different date, category, or a broader keyword.</p><a class="button ghost" href="index.php">See all upcoming events</a></div>
-  <?php else: ?>
-    <ul class="poster-grid<?= $filters['low_data'] ? ' low-data' : '' ?>">
-      <?php foreach ($events as $event): $left = placesLeft($event); ?>
-        <li>
-          <a class="poster-card" href="event.php?id=<?= (int) $event['event_id'] ?>">
-            <span class="event-date-ticket"><strong><?= e(date('d', strtotime($event['start_time']))) ?></strong><span><?= e(strtoupper(date('M', strtotime($event['start_time'])))) ?></span><small><?= e(date('D', strtotime($event['start_time']))) ?></small></span>
-            <span class="poster-meta">
-              <span class="category-label"><?= e(eventCategories()[$event['category']] ?? eventCategories()['other']) ?></span>
-              <strong><?= e($event['title']) ?></strong>
-              <span><?= e(organisationName($event)) ?></span>
-              <span class="card-meta"><?= e(date('H:i', strtotime($event['start_time']))) ?><span aria-hidden="true"> / </span><?= e($event['location']) ?></span>
-              <span class="places<?= $left === 0 ? ' full' : '' ?>"><?= $left === 0 ? ((int) $event['waiting_count'] . ' waiting') : $left . ' places left' ?></span>
-            </span>
-            <?php if (!$filters['low_data'] && !empty($event['poster_path'])): ?><img class="event-card-thumb" src="<?= e($event['poster_path']) ?>" alt=""><?php endif; ?>
-          </a>
-        </li>
-      <?php endforeach; ?>
-    </ul>
-  <?php endif; ?>
-</div>
-<?php require __DIR__ . '/includes/footer.php';
+require __DIR__.'/includes/bootstrap.php';
+$q=mb_substr(trim(queryString('q')),0,100);$category=queryString('category');$when=queryString('when',queryString('date'));$lowData=in_array(strtolower(queryString('low_data')),['1','true','yes','on'],true);$sort=queryString('sort','soon');
+if($category!==''&&!in_array($category,categories(),true))$category='';
+if(!in_array($when,['','today','weekend','week','month'],true))$when='';
+if(!in_array($sort,['soon','popular'],true))$sort='soon';
+$page=max(1,min(10000,(int)queryString('page','1')));$where=" WHERE e.status='approved' AND e.start_time>NOW()";$params=[];
+if($q!==''){$where.=' AND (e.title LIKE ? OR e.location LIKE ? OR e.description LIKE ?)';$needle='%'.str_replace(['!','%','_'],['!!','!%','!_'],$q).'%';$where=str_replace('LIKE ?','LIKE ? ESCAPE \'!\'',$where);$params=[$needle,$needle,$needle];}
+if($category!==''){$where.=' AND e.category=?';$params[]=$category;}
+if($when==='week')$where.=' AND e.start_time<DATE_ADD(NOW(),INTERVAL 7 DAY)';if($when==='month')$where.=' AND e.start_time<DATE_ADD(NOW(),INTERVAL 30 DAY)';
+if($when==='today')$where.=' AND e.start_time<CURDATE()+INTERVAL 1 DAY';
+if($when==='weekend'){$now=new DateTimeImmutable();$day=(int)$now->format('N');$start=$now->setTime(0,0)->modify(($day===7?'-1':'+'.(6-$day)).' days');$where.=' AND e.start_time>=? AND e.start_time<?';$params[]=$start->format('Y-m-d H:i:s');$params[]=$start->modify('+2 days')->format('Y-m-d H:i:s');}
+$statement=$pdo->prepare('SELECT COUNT(*) FROM events e'.$where);$statement->execute($params);$total=(int)$statement->fetchColumn();$pages=max(1,(int)ceil($total/12));$page=min($page,$pages);
+$statement=$pdo->prepare(eventCardSql().$where.($sort==='popular'?' ORDER BY booking_count DESC,e.start_time ASC':' ORDER BY e.start_time ASC'). ' LIMIT 12 OFFSET '.(($page-1)*12));$statement->execute($params);$events=$statement->fetchAll();
+$filtered=$q!==''||$category!==''||$when!==''||$page>1;
+$featured=$pdo->query(eventCardSql()." WHERE e.status='approved' AND e.start_time>NOW() ORDER BY booking_count DESC,e.start_time ASC LIMIT 5")->fetchAll();$hero=$featured[0]??null;
+$pageTitle='Discover your next experience';$bareMain=true;require __DIR__.'/includes/header.php';?>
+<?php if(!$filtered&&!$lowData):?><section class="hero"><div class="hero-art"><img src="<?=e($hero?eventArtwork($hero):'assets/art/concert.svg')?>" alt="" fetchpriority="high"></div><div class="container hero-inner"><div class="hero-copy"><p class="eyebrow"><span class="live-dot"></span> FOR THE CURIOUS. FOR THE TOGETHER.</p><h1>Less scrolling.<br>More <em>living.</em></h1><p class="hero-description">The gigs, gatherings and unexpected discoveries<br class="desktop-only"> that turn an ordinary day into a story.</p><div class="hero-actions"><a class="button" href="#discover">Find your next thing <span aria-hidden="true">↗</span></a><a class="button glass" href="<?=isRole('creator')?'event_form.php':'register.php'?>">Host an event</a></div><div class="hero-footnote"><span class="mini-avatars" aria-hidden="true"><i>✦</i><i>♫</i><i>↗</i></span><span>Good people. Great plans.<br><strong>One place to find them.</strong></span></div></div><?php if($hero):?><a class="hero-feature" href="event.php?id=<?=(int)$hero['event_id']?>"><span class="eyebrow">IN THE SPOTLIGHT <span>01 / <?=str_pad((string)count($featured),2,'0',STR_PAD_LEFT)?></span></span><strong><?=e($hero['title'])?></strong><span><?=e(date('d M · H:i',strtotime($hero['start_time'])))?> · <?=e($hero['location'])?> <b aria-hidden="true">↗</b></span></a><?php endif;?></div></section><?php endif;?>
+<div class="container discovery"><section id="discover" class="discover-section"><div class="section-heading"><div><p class="eyebrow">YOUR FREE TIME, WELL SPENT</p><h2><?=$filtered?'Find your kind of good.':'What are you into?'?></h2></div><span class="muted"><?=$total?> upcoming <?=$total===1?'experience':'experiences'?></span></div>
+<form class="search-bar" method="get" action="index.php"><label class="search-input"><span class="sr-only">Search events or places</span><span aria-hidden="true">⌕</span><input name="q" value="<?=e($q)?>" placeholder="Search events, places, possibilities…" maxlength="100"></label><label><span class="sr-only">When</span><select name="when"><option value="">Any time</option><option value="today" <?=$when==='today'?'selected':''?>>Today</option><option value="weekend" <?=$when==='weekend'?'selected':''?>>This weekend</option><option value="week" <?=$when==='week'?'selected':''?>>Next 7 days</option><option value="month" <?=$when==='month'?'selected':''?>>Next 30 days</option></select></label><label><span class="sr-only">Sort</span><select name="sort"><option value="soon" <?=$sort==='soon'?'selected':''?>>Soonest first</option><option value="popular" <?=$sort==='popular'?'selected':''?>>Most booked</option></select></label><?php if($category):?><input type="hidden" name="category" value="<?=e($category)?>"><?php endif;?><?php if($lowData):?><input type="hidden" name="low_data" value="1"><?php endif;?><button>Explore <span aria-hidden="true">↗</span></button></form>
+<p class="view-toggle"><a class="text-link" href="?<?=e(http_build_query(['q'=>$q,'category'=>$category,'when'=>$when,'sort'=>$sort,'low_data'=>$lowData?'0':'1']))?>#discover"><?=$lowData?'Show visual cards':'Low-data list · hide artwork'?></a></p><nav class="category-nav" aria-label="Event categories"><?php $icons=['All'=>'✦','Music'=>'♫','Film'=>'▶','Arts'=>'◈','Technology'=>'⌘','Community'=>'◎','Outdoors'=>'↗','Learning'=>'⌂','Sports'=>'✧','Social'=>'♡','Other'=>'+'];foreach($icons as $label=>$icon):$c=$label==='All'?'':$label;$link='index.php?'.http_build_query(['q'=>$q,'category'=>$c,'when'=>$when,'sort'=>$sort,'low_data'=>$lowData?'1':'0']).'#discover';?><a class="category-chip <?=$category===$c?'selected':''?>" href="<?=e($link)?>" <?=$category===$c?'aria-current="true"':''?>><span aria-hidden="true"><?=$icon?></span><?=$label?></a><?php endforeach;?></nav>
+<div class="section-heading compact"><h2><?=$filtered?'Your discoveries':'Coming up next'?></h2><?php if($filtered):?><a class="text-link" href="index.php#discover">Clear filters ×</a><?php else:?><span class="section-note">MAKE SOME ROOM IN YOUR CALENDAR</span><?php endif;?></div>
+<?php if(!$events):?><div class="empty-state"><span aria-hidden="true">✦</span><h3>No events found. Yet.</h3><p>Try another search or category. Your next good plan is out there.</p><a class="button secondary" href="index.php">Explore all events</a></div><?php else:?><div class="event-grid <?=$lowData?'low-data':''?>"><?php foreach($events as $event)require __DIR__.'/includes/event_card.php';?></div><?php endif;?>
+<?php if($pages>1):?><nav class="pagination" aria-label="Results pages"><?php if($page>1):?><a class="button secondary" href="?<?=e(http_build_query(['q'=>$q,'category'=>$category,'when'=>$when,'sort'=>$sort,'low_data'=>$lowData?'1':'0','page'=>$page-1]))?>#discover">← Previous</a><?php endif;?><span>Page <?=$page?> of <?=$pages?></span><?php if($page<$pages):?><a class="button secondary" href="?<?=e(http_build_query(['q'=>$q,'category'=>$category,'when'=>$when,'sort'=>$sort,'low_data'=>$lowData?'1':'0','page'=>$page+1]))?>#discover">Next →</a><?php endif;?></nav><?php endif;?></section>
+<?php if(!$filtered&&!$lowData&&count($featured)>1):?><section class="trending-section"><div class="section-heading"><div><p class="eyebrow">GOOD PLANS TRAVEL FAST</p><h2>On everyone's radar.</h2></div><button type="button" class="circle-button secondary" data-rail-next="trending-rail" aria-label="More popular events">→</button></div><div id="trending-rail" class="event-rail"><?php foreach($featured as $rank=>$event):?><div class="rank-card"><span class="rank" aria-hidden="true"><?=$rank+1?></span><?php require __DIR__.'/includes/event_card.php';?></div><?php endforeach;?></div></section><?php endif;?>
+<section class="host-banner"><div><p class="eyebrow">GOT SOMETHING WORTH SHARING?</p><h2>Bring your people<br><em>together.</em></h2><p>From your first workshop to your next sold-out night.</p><a class="button" href="<?=isRole('creator')?'event_form.php':'register.php'?>">Create something good ↗</a></div><div class="host-art" aria-hidden="true"><span>MAKE<br>IT<br>HAPPEN.</span><i>✦</i></div></section></div>
+<?php require __DIR__.'/includes/footer.php';?>

@@ -1,29 +1,35 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/security.php';
-configureSessionCookies();
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
-}
-if (isset($_SESSION['user']) && sessionIsExpired($_SESSION)) {
-    $_SESSION = [];
-    $_SESSION['flash'][] = ['message' => 'Your session expired. Please log in again.', 'type' => 'error'];
-}
-touchSession();
-
 $configPath = __DIR__ . '/../config.php';
 if (!file_exists($configPath)) {
+    http_response_code(503);
     exit('Configuration missing. Copy config.example.php to config.php and update it.');
 }
 $config = require $configPath;
+date_default_timezone_set($config['timezone'] ?? 'Asia/Hong_Kong');
+set_exception_handler(function (Throwable $exception): void { serverError($exception); });
+
+ini_set('display_errors', '0');
+require_once __DIR__ . '/security.php';
+applicationKey();
+startSecureSession($config);
+sendSecurityHeaders($config);
+// A single guard protects every POST, including login, registration and logout.
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    requireValidCsrf();
+} elseif (!in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET', 'HEAD'], true)) {
+    header('Allow: GET, HEAD, POST');
+    http_response_code(405);
+    exit('Method not allowed.');
+}
 
 try {
     $dsn = 'mysql:host=' . $config['db_host'] . ';dbname=' . $config['db_name'] . ';charset=utf8mb4';
     if (!empty($config['db_port'])) {
         $dsn = 'mysql:host=' . $config['db_host'] . ';port=' . $config['db_port'] . ';dbname=' . $config['db_name'] . ';charset=utf8mb4';
     }
-    $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC];
+    $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false];
     $sslCa = (string) ($config['db_ssl_ca'] ?? '');
     if (defined('Pdo\Mysql::ATTR_SSL_CA')) {
         $sslCaAttr = \Pdo\Mysql::ATTR_SSL_CA;
@@ -41,20 +47,32 @@ try {
     if (!empty($config['db_ssl_verify']) && $sslVerifyAttr !== null) {
         $options[$sslVerifyAttr] = true;
     }
+    if ($sslCa !== '' && !is_readable($sslCa)) throw new RuntimeException('SSL CA is unreadable.');
     $pdo = new PDO($dsn, $config['db_user'], $config['db_pass'], $options);
+    $offset = (new DateTimeImmutable())->format('P');
+    $pdo->exec("SET time_zone = " . $pdo->quote($offset));
 } catch (PDOException $exception) {
-    exit('Database connection failed. Check config.php and XAMPP MySQL.');
+    serverError($exception);
 }
 
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/booking.php';
+require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/accounts.php';
+require_once __DIR__ . '/tickets.php';
 
-if (isset($_SESSION['user']['user_id'])) {
-    $activeStatement = $pdo->prepare('SELECT is_active FROM users WHERE user_id = ?');
-    $activeStatement->execute([(int) $_SESSION['user']['user_id']]);
-    $account = $activeStatement->fetch();
-    if (!$account || !accountIsActive($account)) {
-        $_SESSION = [];
-        $_SESSION['flash'][] = ['message' => 'This account is not active.', 'type' => 'error'];
-        touchSession();
+// Refresh roles on each request so a database role change takes effect immediately.
+if (isLoggedIn()) {
+    try {
+        $statement = $pdo->prepare('SELECT user_id,name,email,role,email_verified_at,is_school_email,school_email_verified,is_active,auth_version FROM users WHERE user_id=?');
+        $statement->execute([currentUser()['user_id']]);
+        $user = $statement->fetch();
+        if (!$user || !(int)$user['is_active'] || (int)($_SESSION['auth_version'] ?? 0) !== (int)$user['auth_version']) {
+            resetSession();
+        } else {
+            $_SESSION['user'] = $user;
+        }
+    } catch (Throwable $exception) {
+        serverError($exception);
     }
 }

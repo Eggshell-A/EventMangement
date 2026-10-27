@@ -97,4 +97,3 @@ function eventStatusAfterSave(string $role, ?string $currentStatus, string $inte
     }
     return $isNew ? 'draft' : ($currentStatus ?? 'draft');
 }
-
