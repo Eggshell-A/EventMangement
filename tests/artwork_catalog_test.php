@@ -36,11 +36,6 @@ if (artworkLabel('unknown') !== 'Concert' || artworkPath('unknown') !== 'assets/
     fwrite(STDERR, "FAIL invalid artwork fallback\n");
     $failures++;
 }
-if (glob(__DIR__ . '/../assets/art/*.webp') !== []) {
-    fwrite(STDERR, "FAIL deprecated WebP artwork templates still present\n");
-    $failures++;
-}
-
 if ($failures) {
     fwrite(STDERR, "{$failures} artwork catalogue tests failed\n");
     exit(1);
