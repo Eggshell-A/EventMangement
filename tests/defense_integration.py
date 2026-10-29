@@ -155,8 +155,9 @@ try:
     # Generated assets are served and used by the same A4 poster template.
     for category in ['Learning','Sports','Social','Other']:
         db('UPDATE events SET category=?,artwork=? WHERE event_id=?',[category,category.lower(),eid2])
-        r=get(guest,'poster.php?id='+str(eid2));check('assets/art/'+category.lower()+'.webp' in r.text,'poster uses '+category+' art')
-        check(get(guest,'assets/art/'+category.lower()+'.webp').status_code==200,'asset served '+category)
+        asset_url='assets/art/'+category.lower()+'.svg'
+        r=get(guest,'poster.php?id='+str(eid2));check(asset_url in r.text,'poster uses '+category+' SVG artwork')
+        check(get(guest,asset_url).status_code==200,'SVG asset served '+category)
     # Saturation persists across sessions.
     for _ in range(31): r=post(waiter,'leave_waitlist.php',{'event_id':eid2})
     check(r.status_code==429 and 'Retry-After' in r.headers,'booking mutation rate limit enforced')
