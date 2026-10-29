@@ -31,6 +31,8 @@ CREATE TABLE users (
   email_verified_at DATETIME NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   auth_version INT UNSIGNED NOT NULL DEFAULT 1,
+  must_change_password TINYINT(1) NOT NULL DEFAULT 0,
+  deleted_at DATETIME NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_users_email (email)
 ) ENGINE=InnoDB;
@@ -135,4 +137,13 @@ CREATE TABLE IF NOT EXISTS creator_invoices (
  status ENUM('unpaid','paid','waived') NOT NULL DEFAULT 'unpaid', reference VARCHAR(120) NULL,
  recorded_by INT UNSIGNED NULL, recorded_at DATETIME NULL,
  UNIQUE KEY uq_invoice_month(user_id,billing_month), FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS user_mfa (
+ user_id INT UNSIGNED PRIMARY KEY,
+ secret_cipher TEXT NOT NULL,
+ last_counter BIGINT NOT NULL DEFAULT -1,
+ recovery_hashes TEXT NOT NULL,
+ enabled_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;

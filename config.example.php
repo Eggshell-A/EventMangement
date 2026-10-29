@@ -15,6 +15,8 @@ return [
     'developer_user_ids' => [], // Explicit admin user IDs; development environment only
     'school_email_domains' => ['stu.vtc.edu.hk', 'vtc.edu.hk'],
     'mail_transport' => 'log', // development: private files; production: mail with a configured MTA
+    'cover_owner_bytes' => 50 * 1024 * 1024,
+    'cover_total_bytes' => 512 * 1024 * 1024,
     'mail_from' => 'noreply@example.com',
     'checkin_before_seconds' => 7200, 'checkin_after_seconds' => 43200,
 ];

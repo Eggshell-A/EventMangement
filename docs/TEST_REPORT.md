@@ -1,3 +1,5 @@
+Current account/security changes: [29 October defense verification](DEFENSE_TEST_REPORT.md). The report below describes the previous release.
+
 # Release verification — 27 October 2026
 
 The release was executed locally with PHP 8.3, MariaDB 10.11 (InnoDB), four PHP HTTP workers, and headless Chromium 138 through Playwright. All accounts, messages, invoices and events used for verification were synthetic. No production database was modified.

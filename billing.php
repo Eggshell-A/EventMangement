@@ -2,6 +2,7 @@
 require __DIR__.'/includes/bootstrap.php';requireLogin();if(!isRole('creator')&&!isRole('admin'))abortRequest(403,'Creator or admin access required.');
 $plan=null;if(isRole('creator')){$q=$pdo->prepare('SELECT * FROM creator_plans WHERE user_id=?');$q->execute([currentUser()['user_id']]);$plan=$q->fetch();}
 if($_SERVER['REQUEST_METHOD']==='POST'){
+ enforceActionLimit($pdo,'billing-change',20);if(isRole('admin'))requireRecentAuthentication();
  $action=postString('action');
  if($action==='request_invoice'&&isRole('creator')){
   if(!$plan)abortRequest(409,'Ask an administrator to set up your creator plan.');

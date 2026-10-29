@@ -71,3 +71,10 @@ function establishLogin(array $user): void {
     $_SESSION['last_activity'] = time();
     csrfToken();
 }
+
+function enforceActionLimit(PDO $pdo, string $scope, int $maximum = 30, ?string $identity = null): void {
+    $identity ??= (string)(currentUser()['user_id'] ?? 'guest');
+    $retry = consumeAuthLimits($pdo, [authBucketKey($scope.'-user',$identity)=>$maximum,
+        authBucketKey($scope.'-ip',(string)($_SERVER['REMOTE_ADDR'] ?? 'unknown'))=>max(30,$maximum*3)]);
+    if ($retry) { header('Retry-After: '.$retry); abortRequest(429,'Too many requests. Try again later.'); }
+}

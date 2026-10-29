@@ -40,6 +40,8 @@ function bookOrWait(PDO $pdo, int $eventId, int $userId, string $action): string
         if (!$event || $event['status'] !== 'approved' || strtotime($event['start_time']) <= time()) {
             return 'unavailable';
         }
+        $q=$pdo->prepare("SELECT user_id FROM users WHERE user_id=? AND is_active=1 AND role='user' AND email_verified_at IS NOT NULL FOR UPDATE");$q->execute([$userId]);
+        if (!$q->fetchColumn()) return 'unverified';
         $statement = $pdo->prepare('SELECT 1 FROM bookings WHERE event_id=? AND user_id=?');
         $statement->execute([$eventId, $userId]);
         if ($statement->fetchColumn()) {
@@ -96,7 +98,7 @@ function promoteWaiting(PDO $pdo, array $event, int $maximum): int {
     $info=eventCapacityInfo($pdo,$eventId);
     $free=min($maximum,waitingRefillRemaining($event),max(0,(int)$event['capacity']-$info['bookings']));$promoted=0;
     while($free-->0){
-        $q=$pdo->prepare("SELECT w.entry_id,w.user_id FROM waiting_list w JOIN users u ON u.user_id=w.user_id WHERE w.event_id=? AND u.role='user' AND u.is_active=1 AND NOT EXISTS(SELECT 1 FROM bookings b WHERE b.event_id=w.event_id AND b.user_id=w.user_id) ORDER BY w.joined_at,w.entry_id LIMIT 1 FOR UPDATE");$q->execute([$eventId]);$next=$q->fetch();
+        $q=$pdo->prepare("SELECT w.entry_id,w.user_id FROM waiting_list w JOIN users u ON u.user_id=w.user_id WHERE w.event_id=? AND u.role='user' AND u.is_active=1 AND u.email_verified_at IS NOT NULL AND NOT EXISTS(SELECT 1 FROM bookings b WHERE b.event_id=w.event_id AND b.user_id=w.user_id) ORDER BY w.joined_at,w.entry_id LIMIT 1 FOR UPDATE");$q->execute([$eventId]);$next=$q->fetch();
         if(!$next)break;
         $pdo->prepare('INSERT INTO bookings(event_id,user_id) VALUES(?,?)')->execute([$eventId,$next['user_id']]);
         $pdo->prepare('DELETE FROM waiting_list WHERE entry_id=?')->execute([$next['entry_id']]);

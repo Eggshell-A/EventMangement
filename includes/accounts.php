@@ -15,6 +15,10 @@ function sendAccountEmail(string $email, string $subject, string $body): bool {
     if ($transport !== 'mail' || !filter_var($from, FILTER_VALIDATE_EMAIL) || !filter_var($email, FILTER_VALIDATE_EMAIL)) return false;
     return mail($email, $subject, $body, ['From'=>$from,'Content-Type'=>'text/plain; charset=UTF-8']);
 }
+function notifyAccountSecurity(PDO $pdo, array $user, string $subject, string $body): void {
+    if (($user['role'] ?? '') === 'staff') notifyUser($pdo, (int)$user['user_id'], $subject . ': ' . $body);
+    else sendAccountEmail($user['email'], $subject, $body);
+}
 function issueAccountToken(PDO $pdo, array $user, string $purpose): bool {
     global $config;
     if (!in_array($purpose, ['reset','verify'], true)) throw new InvalidArgumentException();
@@ -23,7 +27,9 @@ function issueAccountToken(PDO $pdo, array $user, string $purpose): bool {
     $expires = date('Y-m-d H:i:s', time() + ($purpose === 'reset' ? 1800 : 86400));
     $pdo->beginTransaction();
     try {
-        $pdo->prepare('SELECT user_id FROM users WHERE user_id=? FOR UPDATE')->execute([$user['user_id']]);
+        $q=$pdo->prepare('SELECT user_id,email,role FROM users WHERE user_id=? AND is_active=1 FOR UPDATE');$q->execute([$user['user_id']]);$user=$q->fetch();
+        // Do not send reset/verification links to administrator-issued staff login IDs.
+        if (!$user || $user['role']==='staff') { $pdo->rollBack(); return false; }
         $pdo->prepare('DELETE FROM account_tokens WHERE user_id=? AND purpose=?')->execute([$user['user_id'],$purpose]);
         $pdo->prepare('INSERT INTO account_tokens (user_id,purpose,token_hash,expires_at) VALUES (?,?,?,?)')->execute([$user['user_id'],$purpose,$hash,$expires]);
         $pdo->commit();
@@ -47,7 +53,7 @@ function consumeAccountToken(PDO $pdo, string $raw, string $purpose, ?string $pa
     try {
         $q=$pdo->prepare('SELECT * FROM users WHERE user_id=? AND is_active=1 FOR UPDATE');$q->execute([$uid]);$user=$q->fetch();
         $q=$pdo->prepare('SELECT token_id FROM account_tokens WHERE token_hash=? AND purpose=? AND expires_at>NOW() FOR UPDATE');$q->execute([$hash,$purpose]);$token=$q->fetch();
-        if (!$user || !$token) { $pdo->rollBack(); return false; }
+        if (!$user || !$token || $user['role']==='staff') { $pdo->rollBack(); return false; }
         if ($purpose === 'reset' && $password !== null && passwordMeetsPolicy($password)) {
             $pdo->prepare('UPDATE users SET password_hash=?,auth_version=auth_version+1 WHERE user_id=?')->execute([password_hash($password,PASSWORD_BCRYPT,['cost'=>12]),$uid]);
             $pdo->prepare('DELETE FROM account_tokens WHERE user_id=? AND purpose=?')->execute([$uid,'reset']);
@@ -57,6 +63,8 @@ function consumeAccountToken(PDO $pdo, string $raw, string $purpose, ?string $pa
             $pdo->prepare('DELETE FROM account_tokens WHERE token_id=?')->execute([$token['token_id']]);
             audit($pdo,'email.verified',(int)$uid);
         } else { $pdo->rollBack(); return false; }
-        $pdo->commit();return true;
+        $pdo->commit();
+        if($purpose==='reset')sendAccountEmail($user['email'],'Fairboard password reset completed','Your password was reset and existing sessions were signed out. Your authenticator remains enabled if previously configured. If this was not you, contact the administrator immediately.');
+        return true;
     } catch(Throwable $e) { if($pdo->inTransaction())$pdo->rollBack();throw $e; }
 }

@@ -9,6 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $retryAfter = loginRetryAfter($pdo, $email);
         if ($retryAfter > 0) {
+            securityEvent('auth.login_limited');
             http_response_code(429);
             header('Retry-After: ' . $retryAfter);
             $error = 'Too many login attempts. Please try again later.';
@@ -17,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // The same email validation used at registration also prevents collation aliases
             // (such as Unicode accents) from bypassing the normalised account limiter.
             if (strlen($email) <= 254 && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $statement = $pdo->prepare('SELECT user_id,name,email,password_hash,role,auth_version,is_active FROM users WHERE email=?');
+                $statement = $pdo->prepare('SELECT user_id,name,email,password_hash,role,auth_version,is_active,must_change_password FROM users WHERE email=?');
                 $statement->execute([$email]);
                 $user = $statement->fetch();
             }
@@ -31,11 +32,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                 }
                 $pdo->prepare('DELETE FROM auth_rate_limits WHERE bucket_key=?')->execute([authBucketKey('login-account', $email)]);
+                if (mfaEnabled($pdo, (int)$user['user_id'])) {
+                    resetSession();
+                    $_SESSION['mfa_pending'] = ['uid'=>(int)$user['user_id'], 'version'=>(int)$user['auth_version'], 'expires'=>time()+300, 'next'=>$next];
+                    csrfToken(); redirect('mfa_challenge.php');
+                }
                 establishLogin($user);
                 audit($pdo,'auth.login',(int)$user['user_id']);
                 flash('You are now logged in.');
                 redirect(loginRedirectFor($user, $next));
             }
+            securityEvent('auth.login_failed');
             $error = 'Invalid email or password.';
         }
     } catch (Throwable $exception) {
