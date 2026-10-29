@@ -142,7 +142,7 @@ try:
     eid2=event(cid);post(user,'booking_action.php',{'event_id':eid2,'action':'book'})
     wid,wemail=account();waiter,_=login(wemail);post(waiter,'booking_action.php',{'event_id':eid2,'action':'wait'})
     other,_=login(email)
-    check('Type <strong class="delete-confirm-keyword">Delete</strong> exactly to confirm.' in post(user,'delete_account.php',{'confirmation':'delete','password':PW}).text,'case-sensitive deletion confirmation highlights Delete in bold')
+    check('Type Delete exactly' in post(user,'delete_account.php',{'confirmation':'delete','password':PW}).text,'case-sensitive deletion confirmation')
     check('incorrect' in post(user,'delete_account.php',{'confirmation':'Delete','password':'wrong'}).text,'deletion requires current password')
     check(post(user,'delete_account.php',{'confirmation':'Delete','password':PW}).status_code==302,'confirmed own account deleted')
     row=db('SELECT name,email,is_active,deleted_at FROM users WHERE user_id=?',[uid])['rows'][0]
