@@ -11,7 +11,6 @@ try {
     foreach(glob(__DIR__.'/../storage/covers/*.jpg')?:[]as $path)if(filemtime($path)<time()-86400)removeUnusedCover($pdo,basename($path));
 }finally{flock($lock,LOCK_UN);fclose($lock);}
 $pdo->exec('DELETE FROM account_tokens WHERE expires_at<NOW()');
-$pdo->exec('DELETE FROM staff_invites WHERE expires_at<NOW()');
 $pdo->prepare('DELETE FROM auth_rate_limits WHERE window_started<?')->execute([time()-86400]);
 // Development emails contain bearer links and must not accumulate indefinitely.
 foreach(glob(__DIR__.'/../storage/mail/*.txt')?:[]as $file)if(filemtime($file)<time()-86400)unlink($file);

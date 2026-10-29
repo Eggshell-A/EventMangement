@@ -5,16 +5,27 @@
 ## 実装された機能
 
 - 全POSTのCSRF、PDOのネイティブプリペアドステートメント、HTMLエスケープ、CSP、所有権・roleの検証を維持。
-- メール確認済みの利用者だけが予約・待機登録・イベント保存可能。DB内でも予約の有効ユーザーを再確認。
+- 一般ユーザーの予約・待機登録とcreatorのイベント保存はメール確認が必須。adminが発行したstaffはメール確認に依存せず、割当て済みイベントだけ編集可能。DB内でも予約の有効ユーザーを再確認。
 - admin/staffはMFA必須。通常ユーザー・creatorは任意。TOTPはSHA-1・6桁・30秒、時刻差±1周期。DBロックでコード再使用と回復コードの二重使用を拒否。
 - MFA秘密鍵はSodium secretboxで暗号化。`app_key`はバックアップし、漏洩時を除き安易に変更しない。回復コードは64ビット乱数を10個、DBにハッシュのみ保存し、画面には発行時だけ表示。
 - Google AuthenticatorとMicrosoft Authenticatorの「その他のアカウント」で扱える`otpauth://` QRをサーバーで生成。外部QRサービスへ秘密鍵を送らない。RFCテストとブラウザー表示の検証と、実機アプリでの確認は区別する。
-- adminだけがstaffをメール招待。24時間有効・一度限り・DBにはトークンハッシュのみ。既存メールボックスを使う。メールサービス上のアドレス作成機能ではない。
+- adminだけがstaffのログイン用メールIDとアカウントを直接作成。初期パスワードは96ビット乱数を含み、DBにはbcryptハッシュのみ保存、成功したPOST画面で一度だけ表示。初回は本人によるパスワード変更→MFA登録を必須とし、完了までstaff機能を使えない。
+- staff用メールIDはアプリ内の識別子であり、既存メールボックスは不要。メール招待・承認は行わず、パスワード回復はadminが初期パスワードを再発行する。全セッションを失効させ、既存MFAは維持。staffのメールreset/verifyリンクは発行・受理しない。セキュリティ通知はアプリ内に表示。
 - 管理操作は直近10分の本人確認。SQL DEVは開発環境・許可admin ID・再認証限定、名前やメールと業務データを閲覧可能。秘密値は非表示、任意SQLは実行不可。
 - 自己削除は「Delete」完全一致、パスワード、設定済みMFAを要求。プロフィールと認証情報を消去、全セッション無効化、未来の予約を取消して待機者を繰り上げる。過去の参加・イベント・請求は削除済みアカウントの参照として残す。creatorは開催予定を先に取消、adminは手動の引継ぎが必要。
 - 連続操作の永続的な制限、取消通知の重複防止、画像保存の全体512 MiB／creator 50 MiBの上限、置換画像と失敗時ファイルの清掃。複数サーバー構成では共有ファイルシステムのロックか専用ストレージ制御が必要。
 - 認証失敗・CSRF拒否・権限拒否・制限超過・重要操作を`FairboardSecurity` JSONとしてPHPログへ出力。生パスワード、トークン、OTP、メールアドレス、URLは記録しない。
 - GitHub Actionsに構文・依存関係監査・単体・移行・HTTPテスト。checkoutは確認したコミットSHA固定。Dependabot設定を追加。
+
+## staffアカウント作成・再発行
+
+1. adminがMFA付きでログインし、Admin → **Create staff account** に名前とメール形式のログインIDを入力する。例：`staff001@eventlink.invalid`。既存アカウントと同じIDは使えない。
+2. 作成直後の画面で初期パスワードを控え、本人へ安全な別経路で渡す。この画面は保存・キャッシュせず、戻った後はパスワードを再表示しない。控え忘れた場合は **Reset staff password** で再発行する。
+3. staffが初期パスワードでログインし、別の自分用パスワードに変更。次に認証アプリを登録し、回復コードを安全に保管する。
+4. adminが **Assign event staff** でcreatorを割り当てる。staffには他のstaffを作成・再発行する権限はない。
+5. 再発行でも既存の認証アプリ／回復コードは必要。MFAも全て紛失した場合は、下記の本人確認を伴う保守手順を使う。
+
+この機能が作るのはFairboard用のログインIDとアカウントです。Google Workspaceなどの送受信用メールボックスの新設は行いません。一般ユーザー・creatorのメール確認とメールによるパスワード回復は継続します。SQL DEVではテーブル内容を表示し、初期パスワードを含む認証秘密情報は表示しません。
 
 ## 39項目の対応
 
@@ -28,13 +39,13 @@
 | 6 | パスワードリスト | MFA、試行制限 | 使い回し禁止、通常ユーザーのMFA利用促進 |
 | 7 | マルウェア | アップロードの画像限定・再エンコード、実行不可 | OS更新、EDR、最小権限。端末感染防止はアプリ外 |
 | 8 | ランサムウェア | Webプロセスの書込先限定 | 暗号化オフライン/不変バックアップと復元訓練 |
-| 9 | フィッシング | MFA、短命招待・確認リンク | TOTPは中継型フィッシングに弱い。将来WebAuthn/passkey、利用者教育 |
+| 9 | フィッシング | MFA、短命のメール確認リンク | TOTPは中継型フィッシングに弱い。将来WebAuthn/passkey、利用者教育 |
 | 10 | 標的型攻撃 | 最小権限、再認証、監査 | EDR、SOC/アラート、対応手順 |
 | 11 | IPスプーフィング | クライアントの転送ヘッダーをPHPで信用しない | 信頼proxyのみWebサーバー側で復元、上流の送信元検証 |
 | 12 | 踏み台 | Shell起動をHTTP処理に追加しない、権限制限 | 不要な外向き通信制限、更新、侵害検出 |
 | 13 | ARPスプーフィング | HTTPS | 管理スイッチのDHCP Snooping/DAI、LAN分離 |
 | 14 | セッションハイジャック | Secure/HttpOnly/SameSite、期限、MFA、重要操作再認証 | HTTPS必須。感染端末や盗難セッションを完全には排除できない |
-| 15 | リプレイ | TOTP使用済みカウンタ、回復・招待・reset一回限り、QR一回受付 | QRの有効時間内のリアルタイム転送は受付本人確認を併用 |
+| 15 | リプレイ | TOTP使用済みカウンタ、回復・resetコード一回限り、QR一回受付 | QRの有効時間内のリアルタイム転送は受付本人確認を併用 |
 | 16 | MITB | CSP、外部スクリプト抑制、再認証 | ブラウザー拡張・感染端末はEDRと管理端末で対応 |
 | 17 | スニファ | HTTPS、必要時DB TLS | 平文HTTP公開禁止、管理通信SSH/VPN |
 | 18 | 電波傍受 | HTTPS | WPA2-AES/WPA3、企業Wi-Fi設定。電波自体の受信は阻止不可 |
@@ -48,7 +59,7 @@
 | 26 | ランダムサブドメイン | アプリ外 | 権威DNS事業者のDDoS防御、不要なワイルドカードを避ける |
 | 27 | ICMPフラッド | アプリ外 | 上流制限。IPv6/PMTUに必要なICMPまで一括遮断しない |
 | 28 | Smurf | アプリ外 | directed broadcast無効、broadcast ICMP応答を無効化 |
-| 29 | スパムメール | 招待・登録・再送・resetの回数制限 | SMTP送信枠、SPF/DKIM/DMARC、バウンス監視 |
+| 29 | スパムメール | 登録・再送・resetの回数制限 | SMTP送信枠、SPF/DKIM/DMARC、バウンス監視 |
 | 30 | XSS | HTML escape、CSP、画像再エンコード | 新画面にも同じ規則を適用。保存値をraw HTMLにしない |
 | 31 | SQLインジェクション | PDO bind、動的識別子allowlist | 実行用DB権限はSELECT/INSERT/UPDATE/DELETE、移行用資格情報を分離 |
 | 32 | ゼロデイ | 防御の重層化、入力制限 | 更新、WAFの仮想パッチ、監視・隔離。未知の攻撃を全保証不可 |
@@ -66,7 +77,7 @@
 2. PRを確認・マージ後、`git pull --ff-only`。未コミットの変更がある場合は先に内容を確認し、resetで消さない。
 3. `sudo apt install php-mbstring php-mysql php-gd php-xml php-curl`。`php -m`で`sodium`も確認。CLIとApache/FPMの両方を確認。
 4. `composer install --no-dev --prefer-dist --no-interaction --no-plugins`。`composer audit --locked`を確認。
-5. **既存DBにdatabase.sqlを再投入しない。** 移行用資格情報で`php tools/migrate.php /private/path/migration-config.php`を実行する。新設テーブルと`deleted_at`を追加する。繰返し実行可能。
+5. **既存DBにdatabase.sqlを再投入しない。** 移行用資格情報で`php tools/migrate.php /private/path/migration-config.php`を実行する。新設テーブルと`deleted_at`・`must_change_password`を追加する。繰返し実行可能。旧版のstaff招待がある場合は保留リンクとstaff用メールトークンを無効化し、既存staffのパスワードとMFAは保持する。
 6. 実行用configではHTTPSの`base_url`（末尾の空白も確認）、`session_secure=true`、`app_env=production`、実際に配送できる`mail_transport=mail`を設定。SMTP/MTAとSPF/DKIM/DMARCを設定し、テストアドレスへ送信確認。
 7. `docs/apache-hardening.conf`と`docs/php-hardening.ini`を実環境に合わせて適用。Apacheは`apache2ctl configtest`後にreload。Nginxの場合は別の`nginx.example.conf`を利用し`nginx -t`。設定例を両方同時に適用しない。
 8. コードはデプロイユーザー所有でWebユーザーは読取のみ、`storage/`だけ必要な書込権限を付与。configはWebユーザーから読める0600/0640、秘密鍵・DBパスワードはGitに入れない。

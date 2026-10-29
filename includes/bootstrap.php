@@ -68,7 +68,7 @@ require_once __DIR__ . '/tickets.php';
 // Refresh roles on each request so a database role change takes effect immediately.
 if (isLoggedIn()) {
     try {
-        $statement = $pdo->prepare('SELECT user_id,name,email,role,email_verified_at,is_school_email,school_email_verified,is_active,auth_version FROM users WHERE user_id=?');
+        $statement = $pdo->prepare('SELECT user_id,name,email,role,email_verified_at,is_school_email,school_email_verified,is_active,auth_version,must_change_password FROM users WHERE user_id=?');
         $statement->execute([currentUser()['user_id']]);
         $user = $statement->fetch();
         if (!$user || !(int)$user['is_active'] || (int)($_SESSION['auth_version'] ?? 0) !== (int)$user['auth_version']) {
@@ -84,6 +84,10 @@ if (isLoggedIn()) {
 if (isLoggedIn()) {
     $hasMfa = mfaEnabled($pdo, (int)currentUser()['user_id']);
     if ($hasMfa && empty($_SESSION['mfa_verified'])) { resetSession(); redirect('login.php'); }
+    if (!empty(currentUser()['must_change_password'])) {
+        if (!in_array(basename($_SERVER['SCRIPT_NAME'] ?? ''), ['change_initial_password.php','logout.php'], true)) redirect('change_initial_password.php');
+        return; // Password replacement precedes enrollment; staff actions remain unavailable.
+    }
     if (!$hasMfa && in_array(currentUser()['role'], ['admin','staff'], true)
         && !in_array(basename($_SERVER['SCRIPT_NAME'] ?? ''), ['mfa.php','logout.php'], true)) redirect('mfa.php');
 }

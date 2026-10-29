@@ -21,8 +21,8 @@ def otp(secret,offset=0):
     return str((struct.unpack('>I',digest[o:o+4])[0]&0x7fffffff)%1000000).zfill(6)
 def account(role='user',verified=True):
     email='def-'+os.urandom(6).hex()+'@fairboard.test';uid=int(db('INSERT INTO users(name,email,password_hash,role,email_verified_at)VALUES(?,?,?,?,?)',['Defense tester',email,fixture({'hash':PW}),role,'2026-01-01 00:00:00' if verified else None])['id']);ids.append(uid);return uid,email
-def login(email):
-    s=requests.Session();r=post(s,'login.php',{'email':email,'password':PW});check(r.status_code==302,'password stage');return s,r
+def login(email,password=PW):
+    s=requests.Session();r=post(s,'login.php',{'email':email,'password':password});check(r.status_code==302,'password stage');return s,r
 def enroll(s):
     r=post(s,'mfa.php',{'action':'start','password':PW});check(r.status_code==200,'MFA setup starts after password')
     secret=re.search(r'class="secret-key">([A-Z2-7]+)',r.text).group(1)
@@ -57,24 +57,81 @@ try:
     db('DELETE FROM auth_rate_limits')
     # Staff creation is exclusively an authenticated admin action, never a public role parameter.
     uid,email=account();user,_=login(email)
-    invite_email='staff-'+os.urandom(6).hex()+'@fairboard.test'
-    check(post(user,'admin_action.php',{'action':'invite_staff','name':'New staff','email':invite_email}).status_code==403,'user cannot invite staff')
-    check(post(admin,'admin_action.php',{'action':'invite_staff','name':'New staff','email':invite_email}).status_code==302,'admin sends staff invite')
-    raw=None
-    for f in sorted((ROOT/'storage/mail').glob('*.txt'),key=lambda f:f.stat().st_mtime,reverse=True):
-        body=f.read_text()
-        if invite_email in body and 'accept_staff.php' in body: raw=re.search(r'token=([a-f0-9]{64})',body).group(1);break
-    check(raw is not None,'staff invite delivered through development transport')
-    check(scalar('SELECT token_hash FROM staff_invites WHERE email=?',[invite_email])==hashlib.sha256(raw.encode()).hexdigest(),'invitation stored hashed')
-    guest=requests.Session();get(guest,'accept_staff.php?token='+raw)
-    check(scalar('SELECT COUNT(*) FROM users WHERE email=?',[invite_email])==0,'GET invite never creates an account')
-    r=post(guest,'accept_staff.php',{'token':raw,'password':PW,'password_confirm':PW});check(r.status_code==302,'staff accepts invitation once')
-    sid=int(scalar('SELECT user_id FROM users WHERE email=?',[invite_email]));ids.append(sid)
-    check(scalar('SELECT role FROM users WHERE user_id=?',[sid])=='staff','role is server-set staff')
-    check('already used' in post(guest,'accept_staff.php',{'token':raw,'password':PW,'password_confirm':PW}).text,'invitation replay rejected')
-    staff,_=login(invite_email);check(get(staff,'staff.php').url.endswith('/mfa.php'),'invited staff must enroll MFA')
+    staff_email='staff-'+os.urandom(6).hex()+'@eventlink.invalid'
+    guest=requests.Session()
+    check(post(user,'admin_action.php',{'action':'create_staff','name':'New staff','email':staff_email}).status_code==403,'user cannot create staff')
+    check(post(guest,'admin_action.php',{'action':'create_staff','name':'New staff','email':staff_email}).status_code==302,'anonymous cannot create staff')
+    check(scalar('SELECT COUNT(*) FROM users WHERE email=?',[staff_email])==0,'denied creation leaves no account')
+    r=post(admin,'admin_action.php',{'action':'create_staff','name':'New staff','email':staff_email,'role':'admin'})
+    check(r.status_code==200 and 'Save these sign-in details' in r.text,'admin directly creates staff account')
+    temporary=re.search(r'id="temporary-password"[^>]*value="([^"]+)"',r.text).group(1)
+    row=db('SELECT * FROM users WHERE email=?',[staff_email])['rows'][0];sid=int(row['user_id']);ids.append(sid)
+    check(row['role']=='staff' and row['must_change_password']==1 and row['is_active']==1,'role server-set and initial password replacement required')
+    check(row['email_verified_at'] is None,'login ID is not falsely marked as a verified mailbox')
+    check(row['password_hash'].startswith('$2y$12$') and temporary not in row['password_hash'],'temporary password is stored only as a bcrypt hash')
+    check('no-store' in r.headers.get('Cache-Control',''),'credential response is not cacheable')
+    check(temporary not in get(admin,'admin.php').text and 'temporary-password' not in get(admin,'admin_action.php').text,'credentials cannot be redisplayed with GET')
+    before_hash=row['password_hash']
+    r=post(admin,'admin_action.php',{'action':'create_staff','name':'Duplicate','email':staff_email.upper()})
+    check(r.status_code==302 and scalar('SELECT password_hash FROM users WHERE user_id=?',[sid])==before_hash,'duplicate login ID never overwrites an account')
+    check('already exists' in get(admin,'admin.php').text,'duplicate account gives usable feedback')
+    check(get(guest,'accept_staff.php?token='+'a'*64).status_code==410 and post(guest,'accept_staff.php',{'token':'a'*64,'password':PW}).status_code==410,'retired invitation endpoint cannot create accounts')
+    check('Choose a valid account type' in post(guest,'register.php',{'name':'Public staff','email':'public-'+staff_email,'role':'staff','password':PW,'password_confirm':PW}).text,'public registration cannot create staff')
+    staff,r=login(staff_email,temporary);check(r.headers.get('Location')=='change_initial_password.php','temporary password enters forced replacement flow')
+    second_staff,_=login(staff_email,temporary)
+    for path in ['staff.php','account.php','mfa.php','developer.php']:
+        check(get(staff,path).url.endswith('/change_initial_password.php'),'initial password gate protects '+path)
+    check(post(staff,'mfa.php',{'action':'start','password':temporary}).headers.get('Location')=='change_initial_password.php','POST cannot bypass initial password gate')
+    check('incorrect' in post(staff,'change_initial_password.php',{'current_password':'wrong','password':PW,'password_confirm':PW}).text,'initial replacement requires correct temporary password')
+    check('different' in post(staff,'change_initial_password.php',{'current_password':temporary,'password':temporary,'password_confirm':temporary}).text,'temporary password cannot be kept')
+    old_csrf=csrf(staff);old_sid=staff.cookies.get('FAIRBOARDSESSID')
+    r=post(staff,'change_initial_password.php',{'current_password':temporary,'password':PW,'password_confirm':PW})
+    check(r.status_code==302 and r.headers.get('Location')=='mfa.php','own password leads to mandatory MFA')
+    check(staff.cookies.get('FAIRBOARDSESSID')!=old_sid and csrf(staff)!=old_csrf,'initial replacement rotates session and CSRF')
+    check('login.php' in get(second_staff,'staff.php').url,'initial replacement invalidates other sessions')
+    check(post(guest,'login.php',{'email':staff_email,'password':temporary}).status_code==200,'temporary password no longer works after replacement')
+    check(get(staff,'staff.php').url.endswith('/mfa.php'),'staff cannot skip authenticator enrollment')
+    staff_secret,staff_codes,_=enroll(staff)
+    check(get(staff,'staff.php').url.endswith('/staff.php'),'staff signs in without an email inbox')
+    check('Managed staff login' in get(staff,'account.php').text and 'Resend verification email' not in get(staff,'account.php').text,'account explains managed staff login')
+    check(post(staff,'admin_action.php',{'action':'create_staff','name':'Denied','email':'nested-'+staff_email}).status_code==403,'staff cannot create another staff account')
+    check(post(staff,'admin_action.php',{'action':'reset_staff_password','user_id':sid}).status_code==403,'staff cannot issue temporary passwords')
+    post(staff,'account.php',{'action':'verify'})
+    post(guest,'forgot_password.php',{'email':staff_email})
+    check(scalar('SELECT COUNT(*) FROM account_tokens WHERE user_id=?',[sid])==0,'staff login IDs cannot receive verification or reset tokens')
+    # Even a legacy token must not recover a managed staff identity via email.
+    saved_hash=scalar('SELECT password_hash FROM users WHERE user_id=?',[sid])
+    for purpose in ['reset','verify']:
+        raw=os.urandom(32).hex();db("INSERT INTO account_tokens(user_id,purpose,token_hash,expires_at)VALUES(?,?,?,DATE_ADD(NOW(),INTERVAL 1 DAY))",[sid,purpose,hashlib.sha256(raw.encode()).hexdigest()])
+        r=post(guest,'reset_password.php' if purpose=='reset' else 'verify_email.php',{'token':raw,'password':PW,'password_confirm':PW})
+        check('invalid' in r.text,'legacy staff '+purpose+' token is refused')
+    check(scalar('SELECT password_hash FROM users WHERE user_id=?',[sid])==saved_hash and scalar('SELECT email_verified_at FROM users WHERE user_id=?',[sid]) is None,'legacy links cannot alter staff credentials or mailbox status')
+    check(scalar('SELECT COUNT(*) FROM notifications WHERE user_id=?',[sid])>0,'staff security notices are delivered in-app')
+    check(not any(staff_email in f.read_text() for f in (ROOT/'storage/mail').glob('*.txt')),'creation and MFA do not email a managed login ID')
+    mfa_before=db('SELECT * FROM user_mfa WHERE user_id=?',[sid])['rows'][0]
+    r=post(admin,'admin_action.php',{'action':'reset_staff_password','user_id':sid})
+    reset_password=re.search(r'id="temporary-password"[^>]*value="([^"]+)"',r.text).group(1)
+    check(r.status_code==200 and reset_password!=temporary,'admin can issue a fresh temporary password')
+    check('login.php' in get(staff,'staff.php').url,'admin password reset invalidates staff sessions')
+    check(db('SELECT * FROM user_mfa WHERE user_id=?',[sid])['rows'][0]==mfa_before,'admin password reset preserves authenticator and recovery hashes')
+    check(scalar('SELECT COUNT(*) FROM account_tokens WHERE user_id=?',[sid])==0,'admin reset revokes previous account tokens')
+    staff,r=login(staff_email,reset_password);check(r.headers.get('Location')=='mfa_challenge.php','reset staff must still prove existing MFA')
+    check(post(staff,'mfa_challenge.php',{'code':staff_codes[0]}).status_code==302,'existing recovery code completes reset sign-in')
+    check(get(staff,'staff.php').url.endswith('/change_initial_password.php'),'reset still requires own password before staff access')
+    check(post(staff,'change_initial_password.php',{'current_password':reset_password,'password':PW,'password_confirm':PW}).headers.get('Location')=='staff.php','reset password flow returns enrolled staff to workspace')
+    # Password recovery is not a way to modify a regular account, admin, or disabled staff.
+    other_hash=scalar('SELECT password_hash FROM users WHERE user_id=?',[uid])
+    check(post(admin,'admin_action.php',{'action':'reset_staff_password','user_id':uid}).status_code==302 and scalar('SELECT password_hash FROM users WHERE user_id=?',[uid])==other_hash,'staff reset cannot target another role')
+    db('UPDATE users SET is_active=0 WHERE user_id=?',[sid]);saved_hash=scalar('SELECT password_hash FROM users WHERE user_id=?',[sid])
+    post(admin,'admin_action.php',{'action':'reset_staff_password','user_id':sid})
+    check(scalar('SELECT password_hash FROM users WHERE user_id=?',[sid])==saved_hash,'disabled staff cannot receive a new password')
+    db('UPDATE users SET is_active=1 WHERE user_id=?',[sid])
+    db('DELETE FROM auth_rate_limits')
     # Verified ownership gates and action idempotency.
     cid,cemail=account('creator');creator,_=login(cemail);eid=event(cid)
+    check(get(staff,'event_form.php?id='+str(eid)).status_code==403,'new staff has no implicit event access')
+    post(admin,'admin_action.php',{'action':'assign_staff','staff_id':sid,'creator_id':cid})
+    r=get(staff,'event_form.php?id='+str(eid));check(r.status_code==200 and 'event_form.php' in r.url,'assigned staff edits events without a mailbox verification gate')
     unid,unemail=account(verified=False);unverified,_=login(unemail)
     check(post(unverified,'booking_action.php',{'event_id':eid,'action':'book'}).headers.get('Location')=='account.php','unverified attendee denied booking')
     check(scalar('SELECT COUNT(*) FROM bookings WHERE user_id=?',[unid])==0,'verification denial has no booking side effect')
@@ -109,5 +166,5 @@ try:
 finally:
     for eid in events:db('DELETE FROM events WHERE event_id=?',[eid])
     for uid in ids:
-        db('DELETE FROM staff_invites WHERE invited_by=?',[uid]);db('DELETE FROM staff_assignments WHERE staff_user_id=? OR creator_user_id=?',[uid,uid]);db('DELETE FROM creator_invoices WHERE user_id=?',[uid]);db('DELETE FROM creator_plans WHERE user_id=?',[uid]);db('DELETE FROM users WHERE user_id=?',[uid])
+        db('DELETE FROM staff_assignments WHERE staff_user_id=? OR creator_user_id=?',[uid,uid]);db('DELETE FROM creator_invoices WHERE user_id=?',[uid]);db('DELETE FROM creator_plans WHERE user_id=?',[uid]);db('DELETE FROM users WHERE user_id=?',[uid])
     db('DELETE FROM auth_rate_limits')

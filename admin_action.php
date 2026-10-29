@@ -1,11 +1,13 @@
 <?php
 require __DIR__.'/includes/bootstrap.php';requirePost();requireRole('admin');$action=postString('action');requireRecentAuthentication();enforceActionLimit($pdo,'admin-action',60);
-if($action==='invite_staff'){
- require_once __DIR__.'/includes/staff_invites.php';
- try{flash(inviteStaff($pdo,trim(postString('name')),strtolower(trim(postString('email'))))?'Staff invitation sent.':'Mail delivery failed. Check your mail settings.');}catch(DomainException $e){flash($e->getMessage(),'error');}
+if($action==='create_staff'||$action==='reset_staff_password'){
+ require_once __DIR__.'/includes/staff_accounts.php';
+ try{
+  $credentials=$action==='create_staff'?createStaffAccount($pdo,postString('name'),postString('email')):resetStaffPassword($pdo,postPositiveInt('user_id'));
+  require __DIR__.'/includes/staff_credentials.php';exit;
+ }catch(DomainException $e){flash($e->getMessage(),'error');}
  redirect('admin.php');
 }
-if($action==='revoke_invite'){$pdo->prepare('DELETE FROM staff_invites WHERE invite_id=?')->execute([postPositiveInt('invite_id')]);audit($pdo,'staff.invite_revoked');flash('Invitation revoked.');redirect('admin.php');}
 if($action==='assign_staff'||$action==='unassign_staff'){
  $staff=postPositiveInt('staff_id');$creator=postPositiveInt('creator_id');
  $pdo->beginTransaction();

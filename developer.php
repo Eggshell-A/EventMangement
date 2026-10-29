@@ -10,7 +10,7 @@ $pageTitle='SQL explorer';
 if(!$recent){require __DIR__.'/includes/header.php';?><section class="compact-panel"><p class="eyebrow">DEVELOPER ACCESS</p><h1>SQL explorer.</h1><p class="muted">Confirm your password to view table information for 10 minutes.</p><?php if($error):?><p class="flash error"><?=e($error)?></p><?php endif;?><form method="post"><?=csrfField()?><label for="password">Your password</label><input id="password" name="password" type="password" required autocomplete="current-password"><?=secondFactorField()?><button class="wide">Unlock table explorer</button></form></section><?php require __DIR__.'/includes/footer.php';exit;}
 // Identifiers ONLY come from this literal allowlist. Never execute user-supplied SQL.
 $tables=[
- 'users'=>['user_id','name','email','role','is_active','is_school_email','school_email_verified','email_verified_at','created_at'],
+ 'users'=>['user_id','name','email','role','is_active','must_change_password','is_school_email','school_email_verified','email_verified_at','created_at'],
  'roles'=>['role_id','code','label'],
  'events'=>['event_id','organiser_id','title','category','start_time','location','capacity','status'],
  'bookings'=>['booking_id','event_id','user_id','checked_in','checked_in_at','created_at'],
@@ -22,7 +22,6 @@ $tables=[
  'audit_log'=>['audit_id','actor_id','action','subject_id','created_at'],
  'account_tokens'=>['token_id','user_id','purpose','expires_at'],
  'user_mfa'=>['user_id','enabled_at'],
- 'staff_invites'=>['invite_id','name','email','invited_by','expires_at','created_at'],
  'auth_rate_limits'=>['attempts','window_started'],
 ];
 $table=queryString('table','events');if(!isset($tables[$table]))abortRequest(400,'Unknown table.');

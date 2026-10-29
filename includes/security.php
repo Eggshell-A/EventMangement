@@ -164,6 +164,8 @@ function securityEvent(string $action, ?int $subjectId = null): void {
     ], JSON_UNESCAPED_SLASHES));
 }
 function requireVerifiedEmail(): void {
+    // Staff login IDs are administrator-issued and need not have an inbox.
+    if (isRole('staff')) return;
     if (empty(currentUser()['email_verified_at'])) {
         flash('Verify your email in Your account before booking or creating events.', 'error');
         redirect('account.php');

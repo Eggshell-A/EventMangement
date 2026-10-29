@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
                 $pdo->prepare('UPDATE users SET auth_version=auth_version+1 WHERE user_id=?')->execute([$uid]);
                 audit($pdo,'mfa.enabled',$uid);$pdo->commit();
                 $_SESSION['auth_version']++;$_SESSION['mfa_verified']=true;$_SESSION['reauthenticated_at']=time();unset($_SESSION['mfa_setup']);session_regenerate_id(true);$enabled=true;
-                sendAccountEmail(currentUser()['email'],'Fairboard MFA enabled','An authenticator was added to your account. If this was not you, contact your administrator immediately.');
+                notifyAccountSecurity($pdo,currentUser(),'Fairboard MFA enabled','An authenticator was added to your account. If this was not you, contact your administrator immediately.');
             } catch(Throwable $e) {if($pdo->inTransaction())$pdo->rollBack();throw $e;}
         }
     } elseif (in_array($action,['disable','recovery'],true) && $enabled) {
@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
                 if($action==='disable') {$pdo->prepare('DELETE FROM user_mfa WHERE user_id=?')->execute([$uid]);$enabled=false;}
                 else {$codes=newRecoveryCodes();$pdo->prepare('UPDATE user_mfa SET recovery_hashes=? WHERE user_id=?')->execute([json_encode(array_map(fn($c)=>hash('sha256',$c),$codes)),$uid]);}
                 $pdo->prepare('UPDATE users SET auth_version=auth_version+1 WHERE user_id=?')->execute([$uid]);audit($pdo,'mfa.'.$action,$uid);$pdo->commit();$_SESSION['auth_version']++;session_regenerate_id(true);
-                sendAccountEmail(currentUser()['email'],'Fairboard security settings changed','Your authenticator or recovery codes changed. If this was not you, contact your administrator immediately.');
+                notifyAccountSecurity($pdo,currentUser(),'Fairboard security settings changed','Your authenticator or recovery codes changed. If this was not you, contact your administrator immediately.');
             }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
         }
     } else abortRequest(400,'Invalid action.');

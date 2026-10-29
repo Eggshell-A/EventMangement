@@ -1,5 +1,5 @@
 <?php
-// CLI-only, additive, repeatable migration. Back up the database first.
+// CLI-only repeatable migration: adds schema and revokes retired staff links. Back up the database first.
 if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 $config=require ($argv[1] ?? __DIR__.'/../config.php');
 $options=[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION];
@@ -32,5 +32,10 @@ $column('creator_plans','verification_reference','VARCHAR(120) NULL');
 $pdo->exec("INSERT IGNORE INTO creator_plans(user_id,organisation_name,plan_code) SELECT user_id,name,'external_monthly' FROM users WHERE role='creator'");
 $pdo->exec(file_get_contents(__DIR__.'/../database/release_tables.sql'));
 $column('users','deleted_at','DATETIME NULL');
+$column('users','must_change_password','TINYINT(1) NOT NULL DEFAULT 0');
 $pdo->exec(file_get_contents(__DIR__.'/../database/defense_tables.sql'));
+// Revoke pending links from the earlier invitation release; retain its legacy table.
+$q=$pdo->query("SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='staff_invites'");
+if ($q->fetchColumn()) $pdo->exec('DELETE FROM staff_invites');
+$pdo->exec("DELETE t FROM account_tokens t JOIN users u ON u.user_id=t.user_id WHERE u.role='staff'");
 echo "Migration complete. Existing users, events and bookings preserved.\n";

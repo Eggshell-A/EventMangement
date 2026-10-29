@@ -44,6 +44,7 @@ function safeEventNext(mixed $value): ?string {
     return $value === 'scan.php' ? 'scan.php' : null;
 }
 function loginRedirectFor(array $user, ?string $next): string {
+    if (!empty($user['must_change_password'])) return 'change_initial_password.php';
     if ($next === 'scan.php' && in_array($user['role'] ?? '', ['creator','staff'], true)) return $next;
     if (($user['role'] ?? '') === 'user' && $next) {
         return $next;
