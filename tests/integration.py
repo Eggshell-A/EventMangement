@@ -88,9 +88,21 @@ try:
  form_html=get(creator,'event_form.php').text
  check('data-artwork-upload-trigger' in form_html and 'enctype="multipart/form-data"' in form_html,
        'create event has interactive upload tile')
+ check(not re.search(r'<input\\b[^>]*\\bname="artwork"[^>]*\\bchecked(?:\\s|=|>)',form_html),
+       'new event opens with no artwork selected')
+ edit_html=get(creator,'event_form.php?id='+str(ce)).text
+ check('name="artwork" value="upload" checked' in edit_html,
+       'edit event restores the previously uploaded cover choice')
  custom={'title':'Upload Cover '+stamp,'description':'Creator upload integration test',
          'start_time':time.strftime('%Y-%m-%dT19:00',time.gmtime(time.time()+86400*30)),
          'location':'Campus','capacity':'8','category':'Other','artwork':'upload','intent':'save_draft'}
+ 
+ missing_cover={**custom,'title':'No Cover '+stamp}
+ missing_cover.pop('artwork')
+ r=post(creator,'event_form.php',missing_cover)
+ check(r.status_code==200 and 'Choose a cover artwork or upload your own image.' in r.text
+       and int(scalar('SELECT COUNT(*) FROM events WHERE title=?',['No Cover '+stamp]))==0,
+       'creator must explicitly select an artwork before saving')
  check('Choose an image to upload' in post(creator,'event_form.php',custom).text,
        'upload choice requires a file on a new event')
  r=post(creator,'event_form.php',custom,
