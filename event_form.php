@@ -200,9 +200,9 @@ $startValue = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($values['start_time'] ?? 
       <input id="artwork-upload-radio" type="radio" name="artwork" value="upload" <?= $selectedCover === 'upload' ? 'checked' : '' ?> aria-label="Upload your own image">
       <button type="button" class="upload-artwork-trigger" data-artwork-upload-trigger aria-label="Choose an image to upload">
         <span class="upload-artwork-icon" data-artwork-upload-placeholder aria-hidden="true">
-          <svg width="42" height="42" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="7" y="7" width="34" height="34" rx="7"/>
-            <path d="M24 33V17m-7 7 7-7 7 7"/>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 16V3m0 0L7 8m5-5 5 5"/>
+            <path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/>
           </svg>
           <small>JPEG / PNG / WebP</small>
         </span>
