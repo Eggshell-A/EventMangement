@@ -93,5 +93,5 @@ function schoolEmail(string $email): bool {
 
 function artworkPath(string $art): string {
     if(!in_array($art,artworkChoices(),true))$art='concert';
-    return 'assets/art/'.$art.(in_array($art,['learning','sports','social','other'],true)?'.webp':'.svg');
+    return 'assets/art/'.$art.'.svg';
 }
