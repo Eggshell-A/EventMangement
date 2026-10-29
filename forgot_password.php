@@ -5,7 +5,8 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
  $retry=consumeAuthLimits($pdo,[authBucketKey('reset-ip',$_SERVER['REMOTE_ADDR']??'')=>10,authBucketKey('reset-email',$email)=>3]);
  if($retry){http_response_code(429);header('Retry-After: '.$retry);$error='Too many requests. Please try again later.';}
  else{
-  $q=$pdo->prepare('SELECT user_id,email FROM users WHERE email=? AND is_active=1');$q->execute([$email]);$user=$q->fetch();
+  $user=false;
+  if(strlen($email)<=254 && filter_var($email,FILTER_VALIDATE_EMAIL)){ $q=$pdo->prepare('SELECT user_id,email FROM users WHERE email=? AND is_active=1');$q->execute([$email]);$user=$q->fetch(); }
   if($user)issueAccountToken($pdo,$user,'reset');
   $message='If an active account matches that email, a reset link has been sent. It expires in 30 minutes.';
  }

@@ -1,5 +1,11 @@
 <?php
-require __DIR__.'/includes/bootstrap.php';requirePost();requireRole('admin');$action=postString('action');
+require __DIR__.'/includes/bootstrap.php';requirePost();requireRole('admin');$action=postString('action');requireRecentAuthentication();enforceActionLimit($pdo,'admin-action',60);
+if($action==='invite_staff'){
+ require_once __DIR__.'/includes/staff_invites.php';
+ try{flash(inviteStaff($pdo,trim(postString('name')),strtolower(trim(postString('email'))))?'Staff invitation sent.':'Mail delivery failed. Check your mail settings.');}catch(DomainException $e){flash($e->getMessage(),'error');}
+ redirect('admin.php');
+}
+if($action==='revoke_invite'){$pdo->prepare('DELETE FROM staff_invites WHERE invite_id=?')->execute([postPositiveInt('invite_id')]);audit($pdo,'staff.invite_revoked');flash('Invitation revoked.');redirect('admin.php');}
 if($action==='assign_staff'||$action==='unassign_staff'){
  $staff=postPositiveInt('staff_id');$creator=postPositiveInt('creator_id');
  $pdo->beginTransaction();
@@ -17,7 +23,7 @@ if($action==='approve_society'){
 }
 if($action==='set_active'){
  $uid=postPositiveInt('user_id');$active=postString('active')==='1'?1:0;
- $pdo->beginTransaction();$q=$pdo->prepare("SELECT user_id FROM users WHERE user_id=? AND role<>'admin' FOR UPDATE");$q->execute([$uid]);if(!$q->fetchColumn()){$pdo->rollBack();abortRequest(403,'Admin accounts cannot be changed here.');}
+ $pdo->beginTransaction();$q=$pdo->prepare("SELECT user_id FROM users WHERE user_id=? AND role<>'admin' AND deleted_at IS NULL FOR UPDATE");$q->execute([$uid]);if(!$q->fetchColumn()){$pdo->rollBack();abortRequest(403,'Admin accounts cannot be changed here.');}
  $pdo->prepare('UPDATE users SET is_active=?,auth_version=auth_version+1 WHERE user_id=?')->execute([$active,$uid]);$pdo->prepare('DELETE FROM account_tokens WHERE user_id=?')->execute([$uid]);audit($pdo,$active?'account.enable':'account.disable',$uid);$pdo->commit();flash('Account status updated. Existing sessions were invalidated.');redirect('admin.php');
 }
 $map=['approve'=>'approved','reject'=>'rejected','remove'=>'removed'];if(!isset($map[$action]))abortRequest(400,'Invalid action.');$id=postPositiveInt('event_id');

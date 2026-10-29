@@ -88,3 +88,7 @@ node tests/browser.cjs
 Integration/migration tests refuse a non-development database or a database name not ending in `_test`. Create a dedicated test database, seed it, and run a local server first. The HTTP suite needs Python `requests` and `Pillow`; the browser suite needs Playwright and Chromium. Use `EVENTLINK_TEST_URL`, `EVENTLINK_DEMO_PASSWORD`, and optionally `CHROMIUM_EXECUTABLE`. On Linux use `PHP_CLI_SERVER_WORKERS=4` for genuine parallel HTTP checks. Never run these mutation tests against real user data. Test artefacts go to gitignored `test-results/`.
 
 `assets/vendor/jsQR.js` is jsQR 1.4.0 (Apache-2.0; bundled licence). Server QR rendering uses the existing Composer-locked chillerlan/php-qrcode package. No CDN is required to display or scan tickets.
+
+## Security and account update (2026-10-29)
+
+See [39-threat coverage and Ubuntu rollout](docs/DEFENSE_39_JA.md) and [verification results](docs/DEFENSE_TEST_REPORT.md) before upgrading. Run the additive migration before serving requests. Admin/staff now require authenticator enrollment; verified email is required for booking and event creation. The developer table viewer is still development-only.

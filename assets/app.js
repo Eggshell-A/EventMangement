@@ -6,4 +6,8 @@
  document.querySelectorAll('[data-print]').forEach(button=>button.addEventListener('click',()=>window.print()));
  document.querySelectorAll('[data-rail-next]').forEach(button=>button.addEventListener('click',()=>{document.getElementById(button.dataset.railNext).scrollBy({left:360,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});}));
  if(location.pathname.endsWith('/login.php')){const m=location.hash.match(/^#token=(v1\.[0-9]+\.[0-9]+\.[0-9]+\.[a-f0-9]{64})$/);if(m){sessionStorage.setItem('fairboard-scan',m[1]);history.replaceState(null,'',location.pathname+location.search);}}
+ const category=document.querySelector('#category');
+ if(category){category.addEventListener('change',()=>{const map={Music:'concert',Film:'cinema',Arts:'gallery',Technology:'digital',Community:'city',Outdoors:'nature',Learning:'learning',Sports:'sports',Social:'social',Other:'other'};const choice=document.querySelector('input[name="artwork"][value="'+map[category.value]+'"]');if(choice)choice.checked=true;});}
+ const deletion=document.querySelector('[data-delete-account]');
+ if(deletion){const field=deletion.querySelector('[name="confirmation"]'),button=deletion.querySelector('[data-delete-submit]');const update=()=>{button.disabled=field.value!=='Delete';};field.addEventListener('input',update);update();}
 })();

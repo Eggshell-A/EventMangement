@@ -31,4 +31,6 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS creator_plans (user_id INT UNSIGNED PRIMA
 $column('creator_plans','verification_reference','VARCHAR(120) NULL');
 $pdo->exec("INSERT IGNORE INTO creator_plans(user_id,organisation_name,plan_code) SELECT user_id,name,'external_monthly' FROM users WHERE role='creator'");
 $pdo->exec(file_get_contents(__DIR__.'/../database/release_tables.sql'));
+$column('users','deleted_at','DATETIME NULL');
+$pdo->exec(file_get_contents(__DIR__.'/../database/defense_tables.sql'));
 echo "Migration complete. Existing users, events and bookings preserved.\n";

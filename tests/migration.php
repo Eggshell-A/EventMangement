@@ -14,7 +14,7 @@ try{
  foreach(['users'=>2,'events'=>1,'bookings'=>1,'creator_plans'=>1]as $table=>$expected){$count=(int)$pdo->query("SELECT COUNT(*) FROM `$table`")->fetchColumn();if($count!==$expected)throw new RuntimeException("Unexpected $table count");}
  if($pdo->query('SELECT description FROM events WHERE event_id=1')->fetchColumn()!=='Keep this event')throw new RuntimeException('Existing event was changed');
  if($pdo->query('SELECT role FROM users WHERE user_id=1')->fetchColumn()!=='creator'||$pdo->query('SELECT role FROM users WHERE user_id=2')->fetchColumn()!=='user')throw new RuntimeException('Legacy roles were not mapped');
- foreach(['account_tokens','audit_log','creator_invoices','notifications','auth_rate_limits']as $table)$pdo->query("SELECT COUNT(*) FROM `$table`");
+ foreach(['account_tokens','audit_log','creator_invoices','notifications','auth_rate_limits','user_mfa','staff_invites']as $table)$pdo->query("SELECT COUNT(*) FROM `$table`");
  echo "PASS: upstream database migrated twice; users, event and booking preserved; legacy roles mapped; creator plan backfilled; release tables present.\n";
  $pdo->exec("DROP DATABASE `$name`");$pdo->exec("CREATE DATABASE `$name` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");$pdo->exec("USE `$name`");$pdo->exec(file_get_contents(__DIR__.'/fixtures/upstream-redesign.sql'));
  $pdo->exec("INSERT INTO users(name,email,password_hash,role)VALUES('Redesign creator','creator@example.test','not-a-login-hash','creator'),('Attendee','attendee@example.test','not-a-login-hash','user')");
@@ -25,6 +25,6 @@ try{
  if($pdo->query('SELECT status FROM events WHERE event_id=2')->fetchColumn()!=='cancelled'||(int)$pdo->query('SELECT COUNT(*) FROM bookings')->fetchColumn()!==1)throw new RuntimeException('Redesign status/bookings lost');
  echo "PASS: latest team redesign schema migrated twice; drafts, cancellation, categories, original capacity, refill count, posters, social links and bookings preserved.\n";
  $pdo->exec("DROP DATABASE `$name`");$pdo->exec("CREATE DATABASE `$name` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");$pdo->exec("USE `$name`");$pdo->exec(file_get_contents(__DIR__.'/../database.sql'));
- if((int)$pdo->query("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE()")->fetchColumn()!==12)throw new RuntimeException('Fresh schema table count mismatch');
- echo "PASS: fresh schema imports with all 12 application tables.\n";
+ if((int)$pdo->query("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE()")->fetchColumn()!==14)throw new RuntimeException('Fresh schema table count mismatch');
+ echo "PASS: fresh schema imports with all 14 application tables.\n";
 }finally{$pdo->exec("DROP DATABASE IF EXISTS `$name`");if(is_file($tmp))unlink($tmp);}

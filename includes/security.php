@@ -76,6 +76,7 @@ function requireValidCsrf(): void {
     $token = $_POST['csrf_token'] ?? null;
     $expected = $_SESSION['csrf_token'] ?? null;
     if (!is_string($token) || !is_string($expected) || !hash_equals($expected, $token)) {
+        securityEvent('request.csrf_rejected');
         http_response_code(403);
         exit('Invalid or expired form. Reload the page and try again.');
     }
@@ -124,6 +125,7 @@ function queryId(string $name = 'id'): int {
     return $value;
 }
 function abortRequest(int $status, string $message): never {
+    if (in_array($status, [403,429], true)) securityEvent('request.rejected_'.$status);
     http_response_code($status);
     exit(htmlspecialchars($message, ENT_QUOTES, 'UTF-8'));
 }
@@ -141,6 +143,7 @@ function isDeveloper(): bool {
 }
 function audit(PDO $pdo, string $action, ?int $subjectId = null): void {
     $ip = hash_hmac('sha256', (string)($_SERVER['REMOTE_ADDR'] ?? 'cli'), applicationKey());
+    securityEvent($action, $subjectId);
     $pdo->prepare('INSERT INTO audit_log (actor_id,action,subject_id,ip_hash) VALUES (?,?,?,?)')
         ->execute([currentUser()['user_id'] ?? null, $action, $subjectId, $ip]);
 }
@@ -150,4 +153,19 @@ function serverError(Throwable $exception): never {
     error_log('EventLink: ' . get_class($exception) . ' [' . $exception->getCode() . ']');
     http_response_code(503);
     exit('The service is temporarily unavailable. Please try again later.');
+}
+
+/** Structured records go to PHP's server log for central collection; never log credentials or URLs. */
+function securityEvent(string $action, ?int $subjectId = null): void {
+    error_log('FairboardSecurity ' . json_encode([
+        'time'=>gmdate('c'), 'action'=>substr($action,0,64),
+        'actor'=>$_SESSION['user']['user_id'] ?? null, 'subject'=>$subjectId,
+        'ip_hash'=>hash_hmac('sha256', (string)($_SERVER['REMOTE_ADDR'] ?? 'cli'), applicationKey()),
+    ], JSON_UNESCAPED_SLASHES));
+}
+function requireVerifiedEmail(): void {
+    if (empty(currentUser()['email_verified_at'])) {
+        flash('Verify your email in Your account before booking or creating events.', 'error');
+        redirect('account.php');
+    }
 }

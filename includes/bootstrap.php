@@ -13,6 +13,9 @@ set_exception_handler(function (Throwable $exception): void { serverError($excep
 ini_set('display_errors', '0');
 require_once __DIR__ . '/security.php';
 applicationKey();
+$config['base_url'] = rtrim(trim($config['base_url']), '/');
+if (!filter_var($config['base_url'], FILTER_VALIDATE_URL) || preg_match('/\s/', $config['base_url']) || !in_array(parse_url($config['base_url'], PHP_URL_SCHEME), ['http','https'], true)) throw new RuntimeException('Invalid base_url');
+if (($config['app_env'] ?? '') === 'production' && (parse_url($config['base_url'], PHP_URL_SCHEME) !== 'https' || ($config['mail_transport'] ?? '') !== 'mail')) throw new RuntimeException('Production requires HTTPS and configured mail');
 startSecureSession($config);
 sendSecurityHeaders($config);
 // A single guard protects every POST, including login, registration and logout.
@@ -59,6 +62,7 @@ require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/booking.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/accounts.php';
+require_once __DIR__ . '/mfa.php';
 require_once __DIR__ . '/tickets.php';
 
 // Refresh roles on each request so a database role change takes effect immediately.
@@ -75,4 +79,11 @@ if (isLoggedIn()) {
     } catch (Throwable $exception) {
         serverError($exception);
     }
+}
+
+if (isLoggedIn()) {
+    $hasMfa = mfaEnabled($pdo, (int)currentUser()['user_id']);
+    if ($hasMfa && empty($_SESSION['mfa_verified'])) { resetSession(); redirect('login.php'); }
+    if (!$hasMfa && in_array(currentUser()['role'], ['admin','staff'], true)
+        && !in_array(basename($_SERVER['SCRIPT_NAME'] ?? ''), ['mfa.php','logout.php'], true)) redirect('mfa.php');
 }

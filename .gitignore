@@ -8,3 +8,6 @@
 !/uploads/.gitignore
 *.log
 .env
+
+__pycache__/
+*.pyc

@@ -10,5 +10,13 @@ if(isset($r['session_id'])){
  if(($r['expire']??'')==='absolute'){$_SESSION['last_activity']=time();$_SESSION['authenticated_at']=time()-28801;}
  $state=['last_activity'=>$_SESSION['last_activity']??null];session_write_close();echo json_encode($state);exit;
 }
+if(isset($r['mfa_recovery'])){
+ $config=$c;require __DIR__.'/../includes/security.php';require __DIR__.'/../includes/mfa.php';
+ $uid=(int)$r['mfa_recovery'];$code=bin2hex(random_bytes(8));
+ $q=$pdo->prepare('SELECT recovery_hashes FROM user_mfa WHERE user_id=?');$q->execute([$uid]);$hashes=$q->fetchColumn();
+ if($hashes!==false){$hashes=json_decode($hashes,true);$hashes[]=hash('sha256',$code);$pdo->prepare('UPDATE user_mfa SET recovery_hashes=? WHERE user_id=?')->execute([json_encode($hashes),$uid]);}
+ else $pdo->prepare('INSERT INTO user_mfa(user_id,secret_cipher,recovery_hashes)VALUES(?,?,?)')->execute([$uid,encryptMfaSecret(base32Encode(random_bytes(20))),json_encode([hash('sha256',$code)])]);
+ echo json_encode($code);exit;
+}
 if(isset($r['hash'])){echo json_encode(password_hash($r['hash'],PASSWORD_BCRYPT,['cost'=>12]));exit;}
 $pdo->exec("SET time_zone='+08:00'");$q=$pdo->prepare($r['sql']);$q->execute($r['params']??[]);echo json_encode(['rows'=>$q->columnCount()?$q->fetchAll():[],'id'=>$pdo->lastInsertId(),'affected'=>$q->rowCount()],JSON_THROW_ON_ERROR);

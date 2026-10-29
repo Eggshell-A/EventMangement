@@ -57,6 +57,8 @@ function consumeAccountToken(PDO $pdo, string $raw, string $purpose, ?string $pa
             $pdo->prepare('DELETE FROM account_tokens WHERE token_id=?')->execute([$token['token_id']]);
             audit($pdo,'email.verified',(int)$uid);
         } else { $pdo->rollBack(); return false; }
-        $pdo->commit();return true;
+        $pdo->commit();
+        if($purpose==='reset')sendAccountEmail($user['email'],'Fairboard password reset completed','Your password was reset and existing sessions were signed out. Your authenticator remains enabled if previously configured. If this was not you, contact the administrator immediately.');
+        return true;
     } catch(Throwable $e) { if($pdo->inTransaction())$pdo->rollBack();throw $e; }
 }

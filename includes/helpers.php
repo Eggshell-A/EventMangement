@@ -5,7 +5,7 @@ function isLoggedIn(): bool { return isset($_SESSION['user']); }
 function currentUser(): ?array { return $_SESSION['user'] ?? null; }
 function isRole(string $role): bool { return isLoggedIn() && currentUser()['role'] === $role; }
 function requireLogin(): void { if (!isLoggedIn()) { flash('Please log in to continue.', 'error'); redirect('login.php' . (basename($_SERVER['SCRIPT_NAME'] ?? '') === 'scan.php' ? '?next=scan.php' : '')); } }
-function requireRole(string $role): void { requireLogin(); if (!isRole($role)) { http_response_code(403); exit('You do not have permission to access this page.'); } }
+function requireRole(string $role): void { requireLogin(); if (!isRole($role)) { securityEvent('access.role_denied'); http_response_code(403); exit('You do not have permission to access this page.'); } }
 function redirect(string $path): never { header('Location: ' . $path); exit; }
 function flash(string $message, string $type = 'success'): void { $_SESSION['flash'][] = ['message' => $message, 'type' => $type]; }
 function showFlashes(): void { foreach ($_SESSION['flash'] ?? [] as $item) { echo '<div class="flash ' . e($item['type']) . '" role="status">' . e($item['message']) . '</div>'; } unset($_SESSION['flash']); }
@@ -27,6 +27,11 @@ function staffAssistsCreator(PDO $pdo, int $creatorId): bool {
     return (bool) $statement->fetchColumn();
 }
 function canEditEvent(PDO $pdo, array $event): bool {
+    if (!isLoggedIn()) return false;
+    // Recheck inside the event transaction so a concurrent deletion cannot revive an event.
+    $q=$pdo->prepare('SELECT role FROM users WHERE user_id=? AND is_active=1 AND auth_version=?'.($pdo->inTransaction()?' FOR UPDATE':''));
+    $q->execute([currentUser()['user_id'], $_SESSION['auth_version'] ?? 0]);
+    if ($q->fetchColumn() !== currentUser()['role']) return false;
     if (isRole('creator') && (int) currentUser()['user_id'] === (int) $event['organiser_id']) {
         return true;
     }
@@ -68,12 +73,12 @@ function canManageAttendees(PDO $pdo, array $event): bool {
     return canEditEvent($pdo,$event);
 }
 function categories(): array { return ['Music','Film','Arts','Technology','Community','Outdoors','Learning','Sports','Social','Other']; }
-function artworkChoices(): array { return ['concert','cinema','gallery','digital','city','nature']; }
+function artworkChoices(): array { return ['concert','cinema','gallery','digital','city','nature','learning','sports','social','other']; }
 function eventArtwork(array $event): string {
     if (!empty($event['image_path'])) return 'media.php?image=' . rawurlencode($event['image_path']);
     if (!empty($event['poster_path']) && preg_match('~^uploads/([a-f0-9]{32}\.(?:jpg|png|webp))$~D',$event['poster_path'],$m)) return 'media.php?poster='.rawurlencode($m[1]);
     $art = $event['artwork'] ?? 'concert';
-    return 'assets/art/' . (in_array($art, artworkChoices(), true) ? $art : 'concert') . '.svg';
+    return artworkPath($art);
 }
 function validEventUrl(string $url): bool { return $url==='' || (strlen($url)<=500 && filter_var($url,FILTER_VALIDATE_URL) && in_array(strtolower((string)parse_url($url,PHP_URL_SCHEME)),['http','https'],true)); }
 function notifyUser(PDO $pdo, int $userId, string $message, ?int $eventId = null): void {
@@ -83,4 +88,9 @@ function schoolEmail(string $email): bool {
     global $config;
     $domain = strtolower(substr(strrchr($email, '@') ?: '', 1));
     return in_array($domain, array_map('strtolower', $config['school_email_domains'] ?? []), true);
+}
+
+function artworkPath(string $art): string {
+    if(!in_array($art,artworkChoices(),true))$art='concert';
+    return 'assets/art/'.$art.(in_array($art,['learning','sports','social','other'],true)?'.webp':'.svg');
 }
