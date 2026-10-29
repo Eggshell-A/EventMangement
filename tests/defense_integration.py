@@ -147,6 +147,10 @@ try:
     check(post(user,'delete_account.php',{'confirmation':'Delete','password':PW}).status_code==302,'confirmed own account deleted')
     row=db('SELECT name,email,is_active,deleted_at FROM users WHERE user_id=?',[uid])['rows'][0]
     check(row['name']=='Deleted account' and row['email']!=email and not row['is_active'] and row['deleted_at'],'identity erased and account disabled')
+    admin_page=get(admin,'admin.php').text
+    check(row['email'] not in admin_page and f"#{uid}" in admin_page,'admin separates anonymized records from active account list')
+    registered_match=re.search(r'<strong>(\d+)</strong><span>Registered accounts</span>',admin_page)
+    check(registered_match and int(registered_match.group(1))==scalar('SELECT COUNT(*) FROM users WHERE deleted_at IS NULL'),'registered account count excludes deleted accounts')
     check('login.php' in get(other,'account.php').url,'deletion invalidates other sessions')
     check(scalar('SELECT user_id FROM bookings WHERE event_id=?',[eid2])==wid,'account deletion promotes waiting attendee under event lock')
     check('upcoming events' in post(creator,'delete_account.php',{'confirmation':'Delete','password':PW}).text,'creator must resolve upcoming events before deletion')
