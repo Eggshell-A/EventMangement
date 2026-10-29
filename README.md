@@ -92,3 +92,5 @@ Integration/migration tests refuse a non-development database or a database name
 ## Security and account update (2026-10-30)
 
 See [39-threat coverage and Ubuntu rollout](docs/DEFENSE_39_JA.md) and [verification results](docs/DEFENSE_TEST_REPORT.md) before upgrading. Run the additive migration before serving requests. Admin/staff require authenticator enrollment; attendees and creators verify their email before booking or creating events. Admins directly create staff login email IDs and receive a temporary password once. Staff replace it on first sign-in and enroll MFA; a mailbox is not required. Admin password reissue invalidates sessions while retaining existing MFA. The developer table viewer displays business records but hides authentication secrets and remains development-only.
+
+Form-check failures now explain possible causes and offer a safe return to a fresh form. See [form recovery design and troubleshooting](docs/FORM_RECOVERY_JA.md).
