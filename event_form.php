@@ -61,8 +61,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!in_array($intent, ['submit', 'save_draft', 'save'], true)) $errors[] = 'Choose a valid save action.';
     if ($intent === 'save_draft' && !isRole('creator')) $errors[] = 'Only the creator can save a draft.';
     if (!validEventUrl($socialUrl)) $errors[] = 'Event link must be an HTTP or HTTPS URL of up to 500 characters.';
-    if (!in_array($category, categories(), true) || !in_array($artwork, artworkChoices(), true) ||
-        !in_array($artworkChoice, [...artworkChoices(), 'upload'], true)) $errors[] = 'Choose a valid category and artwork.';
+    if (!in_array($category, categories(), true)) $errors[] = 'Choose a valid category.';
+    if ($artworkChoice === '') {
+        $errors[] = 'Choose a cover artwork or upload your own image.';
+    } elseif (!in_array($artworkChoice, [...artworkChoices(), 'upload'], true) ||
+        !in_array($artwork, artworkChoices(), true)) {
+        $errors[] = 'Choose a valid artwork.';
+    }
     if ($uploadSelected && !$hasUpload && empty($event['image_path'])) {
         $errors[] = 'Choose an image to upload, or select an illustrated cover.';
     }
@@ -176,8 +181,8 @@ $startValue = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($values['start_time'] ?? 
   <label for="category">Category</label><select id="category" name="category"><?php foreach(categories() as $cat):?><option value="<?=e($cat)?>" <?=($values['category']??'Community')===$cat?'selected':''?>><?=e($cat)?></option><?php endforeach;?></select>
   <label for="social_url">Event website or social link (optional)</label><input id="social_url" type="url" name="social_url" maxlength="500" value="<?=e($values['social_url']??'')?>" placeholder="https://">
   <?php $selectedCover = $_SERVER['REQUEST_METHOD'] === 'POST'
-      ? ($values['artwork_choice'] ?? 'city')
-      : (!empty($event['image_path']) ? 'upload' : ($values['artwork'] ?? 'city')); ?>
+      ? ($values['artwork_choice'] ?? '')
+      : ($event ? (!empty($event['image_path']) ? 'upload' : ($event['artwork'] ?? '')) : ''); ?>
   <label id="artwork-label">Choose cover artwork</label>
   <div class="artwork-options" role="group" aria-labelledby="artwork-label">
     <?php foreach (artworkChoices() as $art): if ($art === 'other') continue; ?>
