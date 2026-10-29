@@ -9,7 +9,8 @@
     "ext-pdo_mysql": "*",
     "ext-mbstring": "*",
     "ext-gd": "*",
-    "ext-fileinfo": "*"
+    "ext-fileinfo": "*",
+    "ext-sodium": "*"
   },
   "config": {
     "sort-packages": true
@@ -17,7 +18,9 @@
   "scripts": {
     "test": [
       "php tests/role_access_test.php",
-      "php tests/security_unit.php"
+      "php tests/security_unit.php",
+      "php tests/mfa_unit.php",
+      "php tests/form_recovery_test.php"
     ]
   }
 }

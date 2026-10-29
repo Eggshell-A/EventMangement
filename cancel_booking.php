@@ -2,6 +2,7 @@
 require __DIR__ . '/includes/bootstrap.php';
 requirePost();
 requireRole('user');
+enforceActionLimit($pdo, 'booking-change', 30);
 try {
     $moved = cancelOwnBooking($pdo, postPositiveInt('booking_id'), (int) currentUser()['user_id']);
 } catch (BookingAccessDenied $exception) {

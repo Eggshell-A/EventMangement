@@ -1,0 +1,45 @@
+name: Security checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  php:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Install test runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y php8.3-cli php8.3-mysql php8.3-mbstring php8.3-gd php8.3-xml php8.3-curl composer mariadb-server python3-requests python3-pil
+          sudo update-alternatives --set php /usr/bin/php8.3
+      - name: Validate dependencies and source
+        run: |
+          composer validate
+          composer install --no-interaction --no-plugins --prefer-dist
+          composer audit --locked --no-interaction
+          find . -path ./vendor -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l
+          composer test
+      - name: Dedicated database and HTTP regressions
+        env:
+          EVENTLINK_TEST_ALLOW_MUTATION: '1'
+          EVENTLINK_DEMO_PASSWORD: FairboardDemo!2026
+        run: |
+          sudo service mariadb start
+          sudo mariadb -e "CREATE DATABASE eventlink_ci_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE USER 'ci'@'127.0.0.1' IDENTIFIED BY 'ci-only'; GRANT ALL ON *.* TO 'ci'@'127.0.0.1';"
+          mariadb -h127.0.0.1 -uci -pci-only eventlink_ci_test < database.sql
+          php -r '$c=require "config.example.php"; $c["db_name"]="eventlink_ci_test"; $c["db_user"]="ci"; $c["db_pass"]="ci-only"; $c["base_url"]="http://127.0.0.1:8080"; $c["app_key"]=bin2hex(random_bytes(32)); $c["enable_developer_tools"]=true; $c["developer_user_ids"]=[4]; file_put_contents("config.php","<?php return ".var_export($c,true).";");'
+          php tools/seed_demo.php
+          php tests/migration.php
+          php tests/cover_storage_test.php
+          PHP_CLI_SERVER_WORKERS=4 php -S 127.0.0.1:8080 router.php > /tmp/fairboard-http.log 2>&1 &
+          for i in $(seq 1 20); do curl --fail --silent http://127.0.0.1:8080/index.php > /dev/null && break || sleep 1; done
+          python3 tests/defense_integration.py
+          python3 tests/integration.py

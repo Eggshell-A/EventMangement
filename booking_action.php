@@ -2,6 +2,8 @@
 require __DIR__ . '/includes/bootstrap.php';
 requirePost();
 requireRole('user');
+enforceActionLimit($pdo, 'booking-change', 30);
+requireVerifiedEmail();
 $id = postPositiveInt('event_id');
 $action = postString('action');
 if (!in_array($action, ['book', 'wait'], true)) {
@@ -20,10 +22,12 @@ $messages = [
     'already_waiting' => ['You are already in the waiting list.', 'error'],
     'full' => ['This event is now full. You can join the waiting list.', 'error'],
     'available' => ['A place is available; book it instead.', 'error'],
+    'unverified' => ['Verify your email before booking.', 'error'],
     'unavailable' => ['This event is not available.', 'error'],
 ];
 flash(...$messages[$result]);
 redirect(match ($result) {
+    'unverified' => 'account.php',
     'unavailable' => 'index.php',
     'booked' => 'booked.php?id=' . $id,
     default => 'event.php?id=' . $id,

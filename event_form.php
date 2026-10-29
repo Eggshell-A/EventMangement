@@ -37,6 +37,8 @@ if (!$id && !isRole('creator')) {
 $back = isRole('staff') ? 'staff.php' : 'dashboard.php';
 $values = $event ?: [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireVerifiedEmail();
+    enforceActionLimit($pdo, $id ? 'event-edit' : 'event-create', $id ? 30 : 10);
     $title = trim(postString('title'));
     $category = postString('category');
     $artwork = postString('artwork');
@@ -83,14 +85,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
                 flash($intent==='save_draft'?'Draft saved.':'Event updated.');
             } else {
+                $pdo->beginTransaction();
+                $q=$pdo->prepare("SELECT user_id FROM users WHERE user_id=? AND is_active=1 AND role='creator' AND email_verified_at IS NOT NULL FOR UPDATE");$q->execute([currentUser()['user_id']]);
+                if(!$q->fetchColumn())throw new BookingAccessDenied();
                 $statement = $pdo->prepare("INSERT INTO events (organiser_id,title,description,start_time,location,capacity,original_capacity,category,artwork,social_url,status) VALUES (?,?,?,?,?,?,?,?,?,?,?)");
                 $statement->execute([currentUser()['user_id'], $title, $description, $date->format('Y-m-d H:i:s'), $location, $capacity, $capacity, $category, $artwork, $socialUrl?:null, $intent==='save_draft'?'draft':'pending']);
+                audit($pdo,'event.create',(int)$pdo->lastInsertId());$pdo->commit();
                 flash($intent==='save_draft'?'Draft saved.':'Event created and submitted for approval.');
             }
             redirect($back);
         } catch (CapacityBelowBookings $exception) {
             $errors[] = 'Capacity cannot be below confirmed bookings.';
         } catch (BookingAccessDenied $exception) {
+            if($pdo->inTransaction())$pdo->rollBack();
             http_response_code(403);
             exit('You cannot edit this event.');
         } catch (DomainException $exception) {
@@ -118,7 +125,7 @@ $startValue = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($values['start_time'] ?? 
   <label for="capacity">Capacity</label><input id="capacity" type="number" min="1" max="100000" name="capacity" required value="<?= e((string) ($values['capacity'] ?? '')) ?>">
   <label for="category">Category</label><select id="category" name="category"><?php foreach(categories() as $cat):?><option value="<?=e($cat)?>" <?=($values['category']??'Community')===$cat?'selected':''?>><?=e($cat)?></option><?php endforeach;?></select>
   <label for="social_url">Event website or social link (optional)</label><input id="social_url" type="url" name="social_url" maxlength="500" value="<?=e($values['social_url']??'')?>" placeholder="https://">
-  <label>Choose cover artwork</label><div class="artwork-options"><?php foreach(artworkChoices() as $art):?><label class="artwork-choice"><input type="radio" name="artwork" value="<?=e($art)?>" <?=($values['artwork']??'city')===$art?'checked':''?>><img src="assets/art/<?=e($art)?>.svg" alt=""><span><?=e(ucfirst($art))?></span></label><?php endforeach;?></div>
+  <label>Choose cover artwork</label><div class="artwork-options"><?php foreach(artworkChoices() as $art):?><label class="artwork-choice"><input type="radio" name="artwork" value="<?=e($art)?>" <?=($values['artwork']??'city')===$art?'checked':''?>><img src="<?=e(artworkPath($art))?>" alt=""><span><?=e(ucfirst($art))?></span></label><?php endforeach;?></div>
   <p class="fine-print">After saving, open Cover studio to upload your own artwork. Changes to event details are sent for approval.</p>
   <div class="form-actions"><?php if(isRole('creator')):?><button class="secondary" name="intent" value="save_draft">Save draft</button><button name="intent" value="submit">Submit for review</button><?php else:?><button name="intent" value="save">Save assigned event</button><?php endif;?><a class="button ghost" href="<?= e($back) ?>">Cancel</a></div>
 </form></div>
