@@ -75,6 +75,21 @@ function canManageAttendees(PDO $pdo, array $event): bool {
 }
 function categories(): array { return ['Music','Film','Arts','Technology','Community','Outdoors','Learning','Sports','Social','Other']; }
 function artworkChoices(): array { return ['concert','cinema','gallery','digital','city','nature','learning','sports','social','other']; }
+function artworkLabel(string $art): string {
+    return match ($art) {
+        'concert' => 'Concert',
+        'cinema' => 'Cinema',
+        'gallery' => 'Gallery',
+        'digital' => 'Digital',
+        'city' => 'City',
+        'nature' => 'Nature',
+        'learning' => 'Study',
+        'sports' => 'Court',
+        'social' => 'Gathering',
+        'other' => 'Abstract',
+        default => 'Concert',
+    };
+}
 function eventArtwork(array $event): string {
     if (!empty($event['image_path'])) return 'media.php?image=' . rawurlencode($event['image_path']);
     if (!empty($event['poster_path']) && preg_match('~^uploads/([a-f0-9]{32}\.(?:jpg|png|webp))$~D',$event['poster_path'],$m)) return 'media.php?poster='.rawurlencode($m[1]);
@@ -93,5 +108,5 @@ function schoolEmail(string $email): bool {
 
 function artworkPath(string $art): string {
     if(!in_array($art,artworkChoices(),true))$art='concert';
-    return 'assets/art/'.$art.(in_array($art,['learning','sports','social','other'],true)?'.webp':'.svg');
+    return 'assets/art/'.$art.'.svg';
 }

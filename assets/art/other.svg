@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1200" viewBox="0 0 960 1200" role="img" aria-label="Illustrated creative abstract geometric poster with arch and colorful floating shapes">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#2d2a45"/><stop offset=".6" stop-color="#65445e"/><stop offset="1" stop-color="#c08589"/></linearGradient>
+<radialGradient id="orb"><stop stop-color="#ffe3b7"/><stop offset=".65" stop-color="#f8b8a4"/><stop offset="1" stop-color="#d47b91"/></radialGradient>
+<linearGradient id="arch" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#f1c3b0"/><stop offset="1" stop-color="#c88894"/></linearGradient>
+<filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".65" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".08"/></feComponentTransfer></filter>
+</defs>
+<rect width="960" height="1200" fill="url(#bg)"/>
+<circle cx="707" cy="308" r="192" fill="url(#orb)"/>
+<path d="M133 1040V494A308 308 0 0 1 749 494V1040Z" fill="#342c48"/>
+<path d="M210 1040V510A231 231 0 0 1 672 510V1040Z" fill="url(#arch)"/>
+<path d="M290 1040V532A151 151 0 0 1 592 532V1040Z" fill="#81556c"/>
+<path d="M351 1040V577A91 91 0 0 1 533 577V1040Z" fill="#3f3652"/>
+<path d="M0 1035H960V1200H0Z" fill="#342c45"/>
+<path d="M0 1090L480 1033L960 1100V1200H0Z" fill="#4b3852"/>
+<circle cx="444" cy="670" r="128" fill="#bb8eaa"/>
+<circle cx="444" cy="670" r="88" fill="#eac5b0"/>
+<path d="M216 815L346 665L483 823L354 963Z" fill="#f0bfaa"/>
+<path d="M483 823L617 671L738 826L604 982Z" fill="#9e88b3"/>
+<path d="M354 963L483 823L604 982L477 1114Z" fill="#74637f"/>
+<path d="M645 824h190v260H645Z" fill="#b2798f"/>
+<path d="M645 824l95-102 95 102Z" fill="#efb69f"/>
+<path d="M835 824l60-86v246l-60 100Z" fill="#73536c"/>
+<path d="M76 1060h151V921H76Z" fill="#9d6e83"/><circle cx="151" cy="912" r="75" fill="#d9b4ae"/>
+<path d="M108 242h90m-45-45v90M812 564h70m-35-35v70" stroke="#f4d6c1" stroke-width="9" opacity=".75"/>
+<circle cx="134" cy="480" r="24" fill="#c49bb1"/><circle cx="826" cy="424" r="16" fill="#f1cdb9"/>
+<rect width="960" height="1200" filter="url(#grain)" opacity=".65"/>
+</svg>

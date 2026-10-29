@@ -18,6 +18,7 @@
   "scripts": {
     "test": [
       "php tests/role_access_test.php",
+      "php tests/artwork_catalog_test.php",
       "php tests/security_unit.php",
       "php tests/mfa_unit.php"
     ]
