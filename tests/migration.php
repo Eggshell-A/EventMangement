@@ -43,5 +43,5 @@ try{
  $migrate();
  if((int)$pdo->query("SELECT COUNT(*) FROM account_tokens WHERE purpose='verify'")->fetchColumn()!==1)throw new RuntimeException('Repeat migration removed a new short-lived verification token');
  if($pdo->query('SELECT password_hash FROM users WHERE user_id=1')->fetchColumn()!=='keep-existing-hash'||$pdo->query('SELECT secret_cipher FROM user_mfa WHERE user_id=1')->fetchColumn()!=='keep-existing-encrypted-secret'||(int)$pdo->query('SELECT must_change_password FROM users WHERE user_id=1')->fetchColumn()!==0)throw new RuntimeException('Existing staff credentials changed');
- echo "PASS: invitation-release migration repeated safely; pending links revoked; existing staff passwords and MFA preserved.\n";
+ echo "PASS: invitation-release migration repeated safely; legacy verification links retired; new short-lived links preserved; existing staff passwords and MFA preserved.\n";
 }finally{$pdo->exec("DROP DATABASE IF EXISTS `$name`");if(is_file($tmp))unlink($tmp);}
