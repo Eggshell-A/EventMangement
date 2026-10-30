@@ -247,6 +247,7 @@
 
   const chooseImage=()=>{radio.checked=true;renderPreview(committedPreview);file.click();};
   trigger.addEventListener('click',chooseImage);
+  radio.addEventListener('change',()=>renderPreview(committedPreview));
   radio.addEventListener('click',()=>file.click());
   file.addEventListener('change',()=>{
    const selected=file.files&&file.files[0];
