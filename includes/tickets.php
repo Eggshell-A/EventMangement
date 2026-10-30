@@ -28,7 +28,7 @@ function qrSvg(string $text): string {
     ]);
 
     $svg = (new \chillerlan\QRCode\QRCode($options))->render($text);
-    if (!is_string($svg) || !str_starts_with(ltrim($svg), '<svg')) {
+    if (!is_string($svg) || !str_contains($svg, '<svg') || !str_contains($svg, '</svg>')) {
         throw new RuntimeException('QR generator did not return SVG markup.');
     }
 
