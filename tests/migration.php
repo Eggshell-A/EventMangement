@@ -1,8 +1,10 @@
 <?php
 if(PHP_SAPI!=='cli'){http_response_code(404);exit;}
 $config=require __DIR__.'/../config.php';
+date_default_timezone_set($config['timezone']??'Asia/Hong_Kong');
 if(($config['app_env']??'')!=='development'||!str_ends_with($config['db_name'],'_test'))exit("Refusing non-test database\n");
 $pdo=new PDO('mysql:host='.$config['db_host'].';port='.$config['db_port'].';charset=utf8mb4',$config['db_user'],$config['db_pass'],[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
+$offset=(new DateTimeImmutable())->format('P');$pdo->exec('SET time_zone = '.$pdo->quote($offset));
 $name='eventlink_migration_'.bin2hex(random_bytes(5)).'_test';$config['db_name']=$name;$tmp=tempnam(sys_get_temp_dir(),'fairboard-test-');
 try{
  $pdo->exec("CREATE DATABASE `$name` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");$pdo->exec("USE `$name`");$pdo->exec(file_get_contents(__DIR__.'/fixtures/upstream.sql'));
