@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1200" viewBox="0 0 960 1200" role="img" aria-label="Illustrated basketball and outdoor court at sunset">
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2=".2" y2="1"><stop stop-color="#233247"/><stop offset=".5" stop-color="#67536d"/><stop offset="1" stop-color="#d58f89"/></linearGradient>
+<radialGradient id="sun"><stop stop-color="#ffdcac"/><stop offset=".65" stop-color="#f4b69b"/><stop offset="1" stop-color="#ce8091"/></radialGradient>
+<radialGradient id="ball" cx=".35" cy=".24" r=".8"><stop stop-color="#f7c49c"/><stop offset=".62" stop-color="#d98c79"/><stop offset="1" stop-color="#91566c"/></radialGradient>
+<filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".65" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".08"/></feComponentTransfer></filter>
+</defs>
+<rect width="960" height="1200" fill="url(#sky)"/>
+<circle cx="635" cy="360" r="230" fill="url(#sun)"/>
+<path d="M0 690L110 650L230 688L310 643L430 687L530 650L660 690L740 646L860 688L960 652V900H0Z" fill="#3e4057"/>
+<path d="M0 790L110 730L270 788L425 730L570 790L750 734L960 790V1200H0Z" fill="#343c50"/>
+<path d="M0 870H960V1200H0Z" fill="#7a556b"/>
+<path d="M0 980L480 730L960 980V1200H0Z" fill="#a7757d"/>
+<path d="M0 1055L480 803L960 1055M480 803V1200M0 1130H960M110 1200Q480 880 850 1200" stroke="#eed0bc" stroke-width="13" fill="none" opacity=".74"/>
+<path d="M102 775V415H124V775M108 430H354V450H108" stroke="#dbafae" stroke-width="16" fill="none"/>
+<rect x="285" y="430" width="110" height="75" rx="6" fill="#edc5b5" opacity=".88"/>
+<rect x="301" y="442" width="77" height="47" rx="5" fill="none" stroke="#8f6778" stroke-width="8"/>
+<ellipse cx="342" cy="520" rx="83" ry="25" fill="none" stroke="#f8c7a2" stroke-width="15"/>
+<path d="M280 525L305 610M320 535L330 624M360 535L356 625M400 525L382 607" stroke="#e8b3a5" stroke-width="6" opacity=".8"/>
+<circle cx="575" cy="655" r="236" fill="url(#ball)"/>
+<circle cx="575" cy="655" r="228" fill="none" stroke="#794d68" stroke-width="17"/>
+<path d="M344 654H804M575 422V887M409 489Q645 653 407 817M744 486Q506 653 746 814" fill="none" stroke="#794d68" stroke-width="15"/>
+<path d="M170 285h32m-16-16v32M780 190h24m-12-12v24" fill="none" stroke="#ffe0ba" stroke-width="6" opacity=".85"/>
+<path d="M0 1200V1124L960 1060V1200Z" fill="#362f4b" opacity=".22"/>
+<rect width="960" height="1200" filter="url(#grain)" opacity=".65"/>
+</svg>

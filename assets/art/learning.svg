@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1200" viewBox="0 0 960 1200" role="img" aria-label="Illustrated open book beneath a glowing sun in a quiet study">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#28273e"/><stop offset=".58" stop-color="#58465d"/><stop offset="1" stop-color="#b4787c"/></linearGradient>
+<radialGradient id="sun"><stop stop-color="#ffe2b7"/><stop offset=".55" stop-color="#f2b3a0"/><stop offset="1" stop-color="#ce7786"/></radialGradient>
+<linearGradient id="page" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0cf"/><stop offset="1" stop-color="#c9acb6"/></linearGradient>
+<filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".65" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".08"/></feComponentTransfer></filter>
+</defs>
+<rect width="960" height="1200" fill="url(#bg)"/>
+<path d="M116 815V390A364 364 0 0 1 844 390V815Z" fill="#332b47"/>
+<path d="M180 815V390A300 300 0 0 1 780 390V815Z" fill="#775e78"/>
+<path d="M230 815V390A250 250 0 0 1 730 390V815Z" fill="#cf9a99"/>
+<circle cx="480" cy="425" r="170" fill="url(#sun)"/>
+<path d="M230 700L355 615L464 704L592 600L730 695V815H230Z" fill="#86657a" opacity=".7"/>
+<path d="M230 765L354 704L461 754L614 668L730 737V815H230Z" fill="#5e526c"/>
+<path d="M0 810H960V1200H0Z" fill="#2b2a3f"/>
+<path d="M0 885H960V1200H0Z" fill="#44364e"/>
+<path d="M56 904H904V943H56Z" fill="#be8583"/>
+<path d="M116 935H844V1200H116Z" fill="#302a41"/>
+<path d="M180 1020V923L316 895L480 955L646 895L780 923V1020L480 1081Z" fill="#d7acac"/>
+<path d="M180 930Q318 885 480 966V1082Q308 1000 180 1025Z" fill="url(#page)"/>
+<path d="M780 930Q642 885 480 966V1082Q652 1000 780 1025Z" fill="#e7c9be"/>
+<path d="M480 966V1082" stroke="#9d7589" stroke-width="9"/>
+<path d="M225 960Q338 939 435 989M225 993Q345 980 435 1020M735 960Q624 939 526 989M735 993Q620 980 526 1020" fill="none" stroke="#ba9c9c" stroke-width="5" opacity=".7"/>
+<path d="M80 755h160v31H80Z" fill="#c18c92"/><path d="M104 717h130v38H104Z" fill="#ead0b5"/><path d="M120 673h110v44H120Z" fill="#79556f"/>
+<path d="M770 720h107v80H770Z" fill="#93677c"/><path d="M790 682h90v38h-90Z" fill="#edd5b7"/>
+<g fill="#fff0ce" opacity=".75"><circle cx="150" cy="350" r="7"/><circle cx="800" cy="308" r="5"/><path d="M752 491h26m-13-13v26M180 545h22m-11-11v22" stroke="#ffe5ce" stroke-width="5"/></g>
+<rect width="960" height="1200" filter="url(#grain)" opacity=".65"/>
+</svg>

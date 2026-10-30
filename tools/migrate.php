@@ -2,6 +2,7 @@
 // CLI-only repeatable migration: adds schema and revokes retired staff links. Back up the database first.
 if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 $config=require ($argv[1] ?? __DIR__.'/../config.php');
+date_default_timezone_set($config['timezone'] ?? 'Asia/Hong_Kong');
 $options=[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION];
 if (!empty($config['db_ssl_ca'])) {
     if (!is_readable($config['db_ssl_ca'])) throw new RuntimeException('SSL CA is unreadable');
@@ -9,6 +10,8 @@ if (!empty($config['db_ssl_ca'])) {
     $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT]=true;
 }
 $pdo=new PDO('mysql:host='.$config['db_host'].';port='.($config['db_port']?:3306).';dbname='.$config['db_name'].';charset=utf8mb4',$config['db_user'],$config['db_pass'],$options);
+$offset=(new DateTimeImmutable())->format('P');
+$pdo->exec('SET time_zone = '.$pdo->quote($offset));
 $column=function(string $table,string $column,string $definition)use($pdo):void {
     $q=$pdo->prepare('SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND COLUMN_NAME=?');$q->execute([$table,$column]);
     if (!$q->fetchColumn()) $pdo->exec("ALTER TABLE `$table` ADD COLUMN `$column` $definition");
@@ -34,6 +37,8 @@ $pdo->exec(file_get_contents(__DIR__.'/../database/release_tables.sql'));
 $column('users','deleted_at','DATETIME NULL');
 $column('users','must_change_password','TINYINT(1) NOT NULL DEFAULT 0');
 $pdo->exec(file_get_contents(__DIR__.'/../database/defense_tables.sql'));
+// Retire legacy 24-hour verification links. New 10-minute links have at most 10 minutes remaining, so repeat migrations preserve them.
+$pdo->exec("DELETE FROM account_tokens WHERE purpose='verify' AND expires_at > DATE_ADD(NOW(), INTERVAL 10 MINUTE)");
 // Revoke pending links from the earlier invitation release; retain its legacy table.
 $q=$pdo->query("SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='staff_invites'");
 if ($q->fetchColumn()) $pdo->exec('DELETE FROM staff_invites');

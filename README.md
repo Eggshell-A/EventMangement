@@ -72,7 +72,7 @@ See [release scope and deployment notes](docs/RELEASE.md) and [test report](docs
 
 Public registration cannot create staff/admin accounts. To bootstrap an administrator or staff member, first register an account, verify the person operationally, and assign its role directly through a trusted database administration tool. Administrator accounts cannot be disabled from the web account-control button.
 
-The original unauthenticated third-party AI image demo has been replaced with an authenticated cover studio: six local illustrations or validated/re-encoded image upload. It does not send prompts or images to a third-party AI provider. Generated artwork from a service can be uploaded as a normal image with appropriate usage rights.
+The original unauthenticated third-party AI image demo has been replaced with an authenticated cover studio: ten local SVG illustrations or validated/re-encoded image upload. It does not send prompts or images to a third-party AI provider. Generated artwork from a service can be uploaded as a normal image with appropriate usage rights.
 
 ## Tests
 
