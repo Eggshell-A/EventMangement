@@ -26,6 +26,8 @@ jobs:
           composer install --no-interaction --no-plugins --prefer-dist
           composer audit --locked --no-interaction
           find . -path ./vendor -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l
+          node --check assets/app.js
+          node --check tests/browser.cjs
           composer test
       - name: Dedicated database and HTTP regressions
         env:
