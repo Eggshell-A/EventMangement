@@ -178,7 +178,7 @@ $startValue = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($values['start_time'] ?? 
   <label for="start_time">Date and time</label><input id="start_time" type="datetime-local" name="start_time" required value="<?= e($startValue) ?>">
   <label for="location">Location</label><input id="location" name="location" required maxlength="200" value="<?= e($values['location'] ?? '') ?>">
   <label for="capacity">Capacity</label><input id="capacity" type="number" min="1" max="100000" name="capacity" required value="<?= e((string) ($values['capacity'] ?? '')) ?>">
-  <label for="category">Category</label><select id="category" name="category"><?php foreach(categories() as $cat):?><option value="<?=e($cat)?>" <?=($values['category']??'Community')===$cat?'selected':''?>><?=e($cat)?></option><?php endforeach;?></select>
+  <label for="category">Category</label><select id="category" name="category"><?php foreach(categories() as $cat):?><option value="<?=e($cat)?>" <?=e($cat)?></option><?php endforeach;?></select>
   <label for="social_url">Event website or social link (optional)</label><input id="social_url" type="url" name="social_url" maxlength="500" value="<?=e($values['social_url']??'')?>" placeholder="https://">
   <?php $selectedCover = $_SERVER['REQUEST_METHOD'] === 'POST'
       ? ($values['artwork_choice'] ?? '')
