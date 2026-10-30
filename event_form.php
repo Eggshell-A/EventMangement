@@ -262,7 +262,7 @@ $startValue = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($values['start_time'] ?? 
       </div>
     </div>
   </dialog>
-  <p class="fine-print" data-artwork-upload-feedback aria-live="polite">Choose an illustrated cover or use Upload to select your own image (JPEG, PNG or WebP, max 4 MB, 100–4096 pixels). Changes to event details are sent for approval.</p>
+  <p class="fine-print" data-artwork-upload-feedback aria-live="polite">Choose an illustrated cover or upload a JPEG, PNG or WebP image (max 4 MB, 100–4096 pixels). You can crop and preview your image before saving. Changes to event details are sent for approval.</p>
   <div class="form-actions"><?php if(isRole('creator')):?><button class="secondary" name="intent" value="save_draft">Save draft</button><button name="intent" value="submit">Submit for review</button><?php else:?><button name="intent" value="save">Save assigned event</button><?php endif;?><a class="button ghost" href="<?= e($back) ?>">Cancel</a></div>
 </form></div>
 <?php require __DIR__ . '/includes/footer.php'; ?>
