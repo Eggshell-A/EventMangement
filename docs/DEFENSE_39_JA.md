@@ -6,6 +6,7 @@
 
 - 全POSTのCSRF、PDOのネイティブプリペアドステートメント、HTMLエスケープ、CSP、所有権・roleの検証を維持。
 - 一般ユーザーの予約・待機登録とcreatorのイベント保存はメール確認が必須。adminが発行したstaffはメール確認に依存せず、割当て済みイベントだけ編集可能。DB内でも予約の有効ユーザーを再確認。
+- メール確認は32-byte乱数トークンを使用し、DBにはSHA-256 digestのみ保存。確認リンクは10分、パスワードresetリンクは30分で失効する。確認リンクのGETはdigestをセッションに結び付けた短命challengeへ移し、303でbearer tokenをURLから除去する。CSRF付きPOSTだけがトークンを一度だけ消費し、メールスキャナーのGETアクセスでは認証状態を変更しない。
 - admin/staffはMFA必須。通常ユーザー・creatorは任意。TOTPはSHA-1・6桁・30秒、時刻差±1周期。DBロックでコード再使用と回復コードの二重使用を拒否。
 - MFA秘密鍵はSodium secretboxで暗号化。`app_key`はバックアップし、漏洩時を除き安易に変更しない。回復コードは64ビット乱数を10個、DBにハッシュのみ保存し、画面には発行時だけ表示。
 - Google AuthenticatorとMicrosoft Authenticatorの「その他のアカウント」で扱える`otpauth://` QRをサーバーで生成。外部QRサービスへ秘密鍵を送らない。RFCテストとブラウザー表示の検証と、実機アプリでの確認は区別する。
