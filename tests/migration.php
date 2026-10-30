@@ -28,11 +28,18 @@ try{
  if((int)$pdo->query("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE()")->fetchColumn()!==13)throw new RuntimeException('Fresh schema table count mismatch');
  echo "PASS: fresh schema imports with all 13 application tables.\n";
  $pdo->exec("INSERT INTO users(name,email,password_hash,role)VALUES('Existing staff','staff@eventlink.invalid','keep-existing-hash','staff')");
+ $pdo->exec("INSERT INTO users(name,email,password_hash,role)VALUES('Pending attendee','pending@example.test','keep-pending-hash','user')");
+ $pendingUser=(int)$pdo->lastInsertId();
  $pdo->exec("INSERT INTO user_mfa(user_id,secret_cipher,recovery_hashes)VALUES(1,'keep-existing-encrypted-secret','[]')");
  $pdo->exec("INSERT INTO account_tokens(user_id,purpose,token_hash,expires_at)VALUES(1,'reset',REPEAT('a',64),DATE_ADD(NOW(),INTERVAL 1 DAY))");
+ $pdo->prepare("INSERT INTO account_tokens(user_id,purpose,token_hash,expires_at)VALUES(?,'verify',REPEAT('c',64),DATE_ADD(NOW(),INTERVAL 1 DAY))")->execute([$pendingUser]);
  $pdo->exec("CREATE TABLE staff_invites(invite_id INT PRIMARY KEY,token_hash CHAR(64)); INSERT INTO staff_invites VALUES(1,REPEAT('b',64))");
  $migrate();
  if((int)$pdo->query('SELECT COUNT(*) FROM staff_invites')->fetchColumn()!==0||(int)$pdo->query('SELECT COUNT(*) FROM account_tokens')->fetchColumn()!==0)throw new RuntimeException('Legacy staff links not retired');
+ if((int)$pdo->query("SELECT COUNT(*) FROM account_tokens WHERE purpose='verify'")->fetchColumn()!==0)throw new RuntimeException('Legacy 24-hour verification token was not retired');
+ $pdo->prepare("INSERT INTO account_tokens(user_id,purpose,token_hash,expires_at)VALUES(?,'verify',REPEAT('d',64),DATE_ADD(NOW(),INTERVAL 9 MINUTE))")->execute([$pendingUser]);
+ $migrate();
+ if((int)$pdo->query("SELECT COUNT(*) FROM account_tokens WHERE purpose='verify'")->fetchColumn()!==1)throw new RuntimeException('Repeat migration removed a new short-lived verification token');
  if($pdo->query('SELECT password_hash FROM users WHERE user_id=1')->fetchColumn()!=='keep-existing-hash'||$pdo->query('SELECT secret_cipher FROM user_mfa WHERE user_id=1')->fetchColumn()!=='keep-existing-encrypted-secret'||(int)$pdo->query('SELECT must_change_password FROM users WHERE user_id=1')->fetchColumn()!==0)throw new RuntimeException('Existing staff credentials changed');
  echo "PASS: invitation-release migration repeated safely; pending links revoked; existing staff passwords and MFA preserved.\n";
 }finally{$pdo->exec("DROP DATABASE IF EXISTS `$name`");if(is_file($tmp))unlink($tmp);}
