@@ -77,8 +77,8 @@ function requireValidCsrf(): void {
     $expected = $_SESSION['csrf_token'] ?? null;
     if (!is_string($token) || !is_string($expected) || !hash_equals($expected, $token)) {
         securityEvent('request.csrf_rejected');
-        http_response_code(403);
-        exit('Invalid or expired form. Reload the page and try again.');
+        require_once __DIR__ . '/form_recovery.php';
+        renderFormRecovery();
     }
 }
 

@@ -4,7 +4,7 @@
   "type": "project",
   "require": {
     "php": "^8.3",
-    "chillerlan/php-qrcode": "^5.0",
+    "chillerlan/php-qrcode": "^6.0",
     "ext-pdo": "*",
     "ext-pdo_mysql": "*",
     "ext-mbstring": "*",
@@ -20,7 +20,8 @@
       "php tests/role_access_test.php",
       "php tests/artwork_catalog_test.php",
       "php tests/security_unit.php",
-      "php tests/mfa_unit.php"
+      "php tests/mfa_unit.php",
+      "php tests/form_recovery_test.php"
     ]
   }
 }
