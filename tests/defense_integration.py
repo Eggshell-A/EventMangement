@@ -34,8 +34,8 @@ def verification_mail_token(email):
     mail_dir=ROOT/'storage/mail'
     for path in sorted(mail_dir.glob('*.txt'),key=lambda p:p.stat().st_mtime_ns,reverse=True):
         content=path.read_text(errors='replace')
-        if content.startswith('To: '+email+'\\n'):
-            match=re.search(r'verify_email\\.php\\?token=([a-f0-9]{64})',content)
+        if content.startswith('To: '+email+'\n'):
+            match=re.search(r'verify_email\.php\\?token=([a-f0-9]{64})',content)
             if match:
                 path.unlink(missing_ok=True)
                 return match.group(1)
@@ -154,7 +154,7 @@ try:
     verify_ttl=int(scalar("SELECT TIMESTAMPDIFF(SECOND,NOW(),expires_at) FROM account_tokens WHERE user_id=? AND purpose='verify'",[unid]))
     check(0<verify_ttl<=600,'email verification token expires within ten minutes')
     scanner=unverified.get(URL+'/verify_email.php?token='+verify_token,timeout=20,allow_redirects=False)
-    challenge_match=re.fullmatch(r'verify_email\\.php\\?challenge=([a-f0-9]{32})',scanner.headers.get('Location',''))
+    challenge_match=re.fullmatch(r'verify_email\.php\\?challenge=([a-f0-9]{32})',scanner.headers.get('Location',''))
     check(scanner.status_code==303 and challenge_match is not None,'GET link redirects to a session-bound URL without the bearer token')
     challenge=challenge_match.group(1)
     verify_page=get(unverified,'verify_email.php?challenge='+challenge)
@@ -171,7 +171,7 @@ try:
     expired_token=verification_mail_token(expired_email)
     expired_hash=hashlib.sha256(expired_token.encode()).hexdigest()
     expired_open=expired_session.get(URL+'/verify_email.php?token='+expired_token,timeout=20,allow_redirects=False)
-    expired_match=re.fullmatch(r'verify_email\\.php\\?challenge=([a-f0-9]{32})',expired_open.headers.get('Location',''))
+    expired_match=re.fullmatch(r'verify_email\.php\\?challenge=([a-f0-9]{32})',expired_open.headers.get('Location',''))
     check(expired_open.status_code==303 and expired_match is not None,'expired-token test creates a session challenge without consuming it')
     db("UPDATE account_tokens SET expires_at=DATE_SUB(NOW(),INTERVAL 1 SECOND) WHERE user_id=? AND purpose='verify'",[expired_id])
     expired_response=post(expired_session,'verify_email.php',{'challenge':expired_match.group(1)})
