@@ -17,8 +17,22 @@ function qrSvg(string $text): string {
     $autoload = __DIR__ . '/../vendor/autoload.php';
     if (!is_file($autoload)) throw new RuntimeException('Run composer install.');
     require_once $autoload;
-    $options = new \chillerlan\QRCode\QROptions(['outputBase64'=>false,'outputType'=>\chillerlan\QRCode\QRCode::OUTPUT_MARKUP_SVG,'svgUseFillAttributes'=>true,'addQuietzone'=>true]);
-    return (new \chillerlan\QRCode\QRCode($options))->render($text);
+
+    // php-qrcode 6.x selects its renderer through outputInterface, not outputType.
+    // OUTPUT_MARKUP_SVG is not a QRCode constant in this version.
+    $options = new \chillerlan\QRCode\QROptions([
+        'outputBase64' => false,
+        'outputInterface' => \chillerlan\QRCode\Output\QRMarkupSVG::class,
+        'svgUseFillAttributes' => true,
+        'addQuietzone' => true,
+    ]);
+
+    $svg = (new \chillerlan\QRCode\QRCode($options))->render($text);
+    if (!is_string($svg) || !str_starts_with(ltrim($svg), '<svg')) {
+        throw new RuntimeException('QR generator did not return SVG markup.');
+    }
+
+    return $svg;
 }
 function checkinOpen(array $event): bool {
     global $config;
