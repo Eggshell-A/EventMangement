@@ -30,6 +30,16 @@ def enroll(s):
     codes=re.findall(r'\b[a-f0-9]{16}\b',re.search(r'<pre class="recovery-codes">(.*?)</pre>',r.text,re.S).group(1));check(len(codes)==10,'recovery codes shown once');return secret,codes,enrollment_code
 def event(owner,title='Defense event',capacity=1):
     eid=int(db("INSERT INTO events(organiser_id,title,description,start_time,location,capacity,original_capacity,status,artwork,category)VALUES(?,?,'Test',DATE_ADD(NOW(),INTERVAL 1 DAY),'Hall',?,?,'approved','sports','Sports')",[owner,title,capacity,capacity])['id']);events.append(eid);return eid
+def verification_mail_token(email):
+    mail_dir=ROOT/'storage/mail'
+    for path in sorted(mail_dir.glob('*.txt'),key=lambda p:p.stat().st_mtime_ns,reverse=True):
+        content=path.read_text(errors='replace')
+        if content.startswith('To: '+email+'\n'):
+            match=re.search(r'verify_email\.php\?token=([a-f0-9]{64})',content)
+            if match:
+                path.unlink(missing_ok=True)
+                return match.group(1)
+    raise AssertionError('verification email/token not found for '+email)
 try:
     db('DELETE FROM auth_rate_limits')
     aid,aemail=account('admin');admin,_=login(aemail)
@@ -103,8 +113,15 @@ try:
     saved_hash=scalar('SELECT password_hash FROM users WHERE user_id=?',[sid])
     for purpose in ['reset','verify']:
         raw=os.urandom(32).hex();db("INSERT INTO account_tokens(user_id,purpose,token_hash,expires_at)VALUES(?,?,?,DATE_ADD(NOW(),INTERVAL 1 DAY))",[sid,purpose,hashlib.sha256(raw.encode()).hexdigest()])
-        r=post(guest,'reset_password.php' if purpose=='reset' else 'verify_email.php',{'token':raw,'password':PW,'password_confirm':PW})
-        check('invalid' in r.text,'legacy staff '+purpose+' token is refused')
+        if purpose=='reset':
+            r=post(guest,'reset_password.php',{'token':raw,'password':PW,'password_confirm':PW})
+            check('invalid' in r.text,'legacy staff reset token is refused')
+        else:
+            opened=guest.get(URL+'/verify_email.php?token='+raw,timeout=20,allow_redirects=False)
+            challenge_match=re.fullmatch(r'verify_email\.php\?challenge=([a-f0-9]{32})',opened.headers.get('Location',''))
+            check(opened.status_code==303 and challenge_match is not None,'legacy staff verify link opens only a session-bound challenge')
+            r=post(guest,'verify_email.php',{'challenge':challenge_match.group(1)})
+            check(r.status_code==303 and r.headers.get('Location')=='verify_email.php?status=invalid','legacy staff verify token is refused')
     check(scalar('SELECT password_hash FROM users WHERE user_id=?',[sid])==saved_hash and scalar('SELECT email_verified_at FROM users WHERE user_id=?',[sid]) is None,'legacy links cannot alter staff credentials or mailbox status')
     check(scalar('SELECT COUNT(*) FROM notifications WHERE user_id=?',[sid])>0,'staff security notices are delivered in-app')
     check(not any(staff_email in f.read_text() for f in (ROOT/'storage/mail').glob('*.txt')),'creation and MFA do not email a managed login ID')
@@ -135,6 +152,43 @@ try:
     unid,unemail=account(verified=False);unverified,_=login(unemail)
     check(post(unverified,'booking_action.php',{'event_id':eid,'action':'book'}).headers.get('Location')=='account.php','unverified attendee denied booking')
     check(scalar('SELECT COUNT(*) FROM bookings WHERE user_id=?',[unid])==0,'verification denial has no booking side effect')
+    # Email verification: digest-only storage, ten-minute expiry, GET-safe flow and one-time POST.
+    post(unverified,'account.php',{'action':'verify'})
+    verify_token=verification_mail_token(unemail)
+    verify_hash=hashlib.sha256(verify_token.encode()).hexdigest()
+    stored_hash=scalar("SELECT token_hash FROM account_tokens WHERE user_id=? AND purpose='verify'",[unid])
+    check(stored_hash==verify_hash,'email verification stores only the SHA-256 token digest')
+    verify_ttl=int(scalar("SELECT TIMESTAMPDIFF(SECOND,NOW(),expires_at) FROM account_tokens WHERE user_id=? AND purpose='verify'",[unid]))
+    check(0<verify_ttl<=600,'email verification token expires within ten minutes')
+    scanner=unverified.get(URL+'/verify_email.php?token='+verify_token,timeout=20,allow_redirects=False)
+    challenge_match=re.fullmatch(r'verify_email\.php\?challenge=([a-f0-9]{32})',scanner.headers.get('Location',''))
+    check(scanner.status_code==303 and challenge_match is not None,'GET link redirects to a session-bound URL without the bearer token')
+    challenge=challenge_match.group(1)
+    verify_page=get(unverified,'verify_email.php?challenge='+challenge)
+    check(verify_page.status_code==200 and verify_token not in verify_page.url and verify_token not in verify_page.text and challenge in verify_page.text,'verification form does not expose the bearer token')
+    check(scalar('SELECT COUNT(*) FROM account_tokens WHERE token_hash=?',[verify_hash])==1 and scalar('SELECT email_verified_at FROM users WHERE user_id=?',[unid]) is None,'GET-only email scanner cannot consume or verify the token')
+    check('no-store' in verify_page.headers.get('Cache-Control','') and verify_page.headers.get('Referrer-Policy')=='no-referrer' and verify_page.headers.get('X-Robots-Tag')=='noindex, nofollow','verification response is not cached, indexed or sent as a referrer')
+    missing_csrf=unverified.post(URL+'/verify_email.php',data={'challenge':challenge},timeout=20,allow_redirects=False)
+    check(missing_csrf.status_code==403,'verification POST rejects missing CSRF')
+    foreign_session=requests.Session()
+    foreign_attempt=post(foreign_session,'verify_email.php',{'challenge':challenge})
+    check(foreign_attempt.status_code==303 and foreign_attempt.headers.get('Location')=='verify_email.php?status=invalid' and scalar('SELECT COUNT(*) FROM account_tokens WHERE token_hash=?',[verify_hash])==1,'verification challenge is bound to its original session')
+    verified_response=post(unverified,'verify_email.php',{'challenge':challenge})
+    check(verified_response.status_code==303 and verified_response.headers.get('Location')=='verify_email.php?status=success','verification POST uses a clean 303 redirect')
+    check(scalar('SELECT email_verified_at FROM users WHERE user_id=?',[unid]) is not None and scalar('SELECT COUNT(*) FROM account_tokens WHERE token_hash=?',[verify_hash])==0,'valid verification token is consumed exactly once')
+    replay_response=post(unverified,'verify_email.php',{'challenge':challenge})
+    check(replay_response.status_code==303 and replay_response.headers.get('Location')=='verify_email.php?status=invalid','verification challenge cannot be replayed')
+
+    expired_id,expired_email=account(verified=False);expired_session,_=login(expired_email)
+    post(expired_session,'account.php',{'action':'verify'})
+    expired_token=verification_mail_token(expired_email)
+    expired_hash=hashlib.sha256(expired_token.encode()).hexdigest()
+    expired_open=expired_session.get(URL+'/verify_email.php?token='+expired_token,timeout=20,allow_redirects=False)
+    expired_match=re.fullmatch(r'verify_email\.php\?challenge=([a-f0-9]{32})',expired_open.headers.get('Location',''))
+    check(expired_open.status_code==303 and expired_match is not None,'expired-token test creates a session challenge without consuming it')
+    db("UPDATE account_tokens SET expires_at=DATE_SUB(NOW(),INTERVAL 1 SECOND) WHERE user_id=? AND purpose='verify'",[expired_id])
+    expired_response=post(expired_session,'verify_email.php',{'challenge':expired_match.group(1)})
+    check(expired_response.status_code==303 and expired_response.headers.get('Location')=='verify_email.php?status=invalid' and scalar('SELECT email_verified_at FROM users WHERE user_id=?',[expired_id]) is None,'expired verification token is rejected without changing the account')
     post(user,'booking_action.php',{'event_id':eid,'action':'book'})
     post(creator,'organiser_action.php',{'event_id':eid,'action':'cancel'});before=int(scalar('SELECT COUNT(*) FROM notifications WHERE event_id=?',[eid]));post(creator,'organiser_action.php',{'event_id':eid,'action':'cancel'})
     check(before==int(scalar('SELECT COUNT(*) FROM notifications WHERE event_id=?',[eid])),'repeated cancellation does not resend notifications')
