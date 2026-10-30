@@ -152,7 +152,7 @@ require __DIR__ . '/includes/header.php';
 
     <?php if ($showForm): ?>
         <p>Confirm that this email address belongs to you.</p>
-        <p class="fine-print">This confirmation session expires within 10 minutes. Opening the link alone does not verify your email.</p>
+        <p class="fine-print">The verification link expires 10 minutes after it was sent. Opening the link alone does not verify your email.</p>
         <form method="post" action="verify_email.php">
             <?= csrfField() ?>
             <input type="hidden" name="challenge" value="<?= e($activeChallenge) ?>">
