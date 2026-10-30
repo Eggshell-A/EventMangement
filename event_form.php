@@ -226,6 +226,42 @@ $startValue = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($values['start_time'] ?? 
     </div>
   </div>
   <input id="artwork-file" name="cover" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+  <button type="button" class="secondary cover-crop-current" data-cover-crop-current hidden>Adjust crop</button>
+  <dialog class="cover-crop-dialog" data-cover-crop-dialog aria-labelledby="cover-crop-title" aria-describedby="cover-crop-help">
+    <div class="cover-crop-shell">
+      <div class="cover-crop-heading">
+        <div>
+          <p class="eyebrow">COVER IMAGE</p>
+          <h2 id="cover-crop-title">Adjust your image</h2>
+        </div>
+        <span class="cover-crop-mark" aria-hidden="true">↗</span>
+      </div>
+      <p id="cover-crop-help" class="cover-crop-help">Drag the image to reposition it. Use the slider to zoom in or out.</p>
+      <div class="cover-crop-canvas-wrap">
+        <canvas class="cover-crop-canvas" data-cover-crop-canvas width="600" height="750" aria-label="Image crop preview"></canvas>
+      </div>
+      <div class="cover-crop-controls">
+        <div>
+          <span class="cover-crop-label">Aspect ratio</span>
+          <div class="cover-crop-ratios" role="group" aria-label="Crop aspect ratio">
+            <button type="button" class="cover-crop-ratio" data-crop-ratio="4:5" aria-pressed="true">Portrait 4:5</button>
+            <button type="button" class="cover-crop-ratio" data-crop-ratio="16:9" aria-pressed="false">Landscape 16:9</button>
+            <button type="button" class="cover-crop-ratio" data-crop-ratio="1:1" aria-pressed="false">Square 1:1</button>
+          </div>
+        </div>
+        <label class="cover-crop-zoom" for="cover-crop-zoom">
+          <span class="cover-crop-label">Zoom</span>
+          <input id="cover-crop-zoom" type="range" min="1" max="3" step="0.05" value="1" data-cover-crop-zoom>
+          <output data-cover-crop-zoom-value>1.0×</output>
+        </label>
+      </div>
+      <p class="cover-crop-status" data-cover-crop-status role="status" aria-live="polite">Your original image will not be changed.</p>
+      <div class="cover-crop-actions">
+        <button type="button" class="secondary" data-cover-crop-cancel>Cancel</button>
+        <button type="button" data-cover-crop-apply>Use cropped image</button>
+      </div>
+    </div>
+  </dialog>
   <p class="fine-print" data-artwork-upload-feedback aria-live="polite">Choose an illustrated cover or use Upload to select your own image (JPEG, PNG or WebP, max 4 MB, 100–4096 pixels). Changes to event details are sent for approval.</p>
   <div class="form-actions"><?php if(isRole('creator')):?><button class="secondary" name="intent" value="save_draft">Save draft</button><button name="intent" value="submit">Submit for review</button><?php else:?><button name="intent" value="save">Save assigned event</button><?php endif;?><a class="button ghost" href="<?= e($back) ?>">Cancel</a></div>
 </form></div>
