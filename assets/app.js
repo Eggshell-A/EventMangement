@@ -37,6 +37,7 @@
   let offsetY=0;
   let drag=null;
   let readSequence=0;
+  let cropLoading=false;
 
   function replaceInputFile(selected){
    if(!selected){file.value='';return true;}
@@ -98,6 +99,7 @@
   }
 
   function openCropEditor(image,sourceFile){
+   cropLoading=false;
    cropImage=image;
    pendingFile=sourceFile;
    cropRatio=4/5;
@@ -113,11 +115,12 @@
    cropStatus.textContent='Your original image will not be changed.';
    applyCropButton.disabled=false;
    try{cropDialog.showModal();}
-   catch(error){cropImage=null;pendingFile=null;restoreCommitted();feedback.textContent='The image editor could not be opened in this browser.';}
+   catch(error){cropLoading=false;cropImage=null;pendingFile=null;restoreCommitted();feedback.textContent='The image editor could not be opened in this browser.';}
   }
 
   function cancelCrop(){
    readSequence++;
+   cropLoading=false;
    cropImage=null;
    pendingFile=null;
    drag=null;
@@ -127,14 +130,16 @@
 
   function loadImageFile(selected){
    const sequence=++readSequence;
+   cropLoading=true;
    const reader=new FileReader();
    reader.onload=()=>{
     if(sequence!==readSequence)return;
-    if(typeof reader.result!=='string'){restoreCommitted();feedback.textContent='The selected image could not be read.';return;}
+    if(typeof reader.result!=='string'){cropLoading=false;restoreCommitted();feedback.textContent='The selected image could not be read.';return;}
     const image=new Image();
     image.onload=()=>{
      if(sequence!==readSequence)return;
      if(image.naturalWidth<100||image.naturalHeight<100||image.naturalWidth>4096||image.naturalHeight>4096){
+      cropLoading=false;
       restoreCommitted();
       feedback.textContent='Use an image between 100 and 4096 pixels on each side.';
       return;
@@ -143,6 +148,7 @@
     };
     image.onerror=()=>{
      if(sequence!==readSequence)return;
+     cropLoading=false;
      restoreCommitted();
      feedback.textContent='The selected image could not be opened.';
     };
@@ -150,6 +156,7 @@
    };
    reader.onerror=()=>{
     if(sequence!==readSequence)return;
+    cropLoading=false;
     restoreCommitted();
     feedback.textContent='The selected image could not be read.';
    };
@@ -160,13 +167,17 @@
    if(preview.hidden||!preview.src)return;
    radio.checked=true;
    cropButton.hidden=true;
+   const sequence=++readSequence;
+   cropLoading=true;
    const image=new Image();
    image.onload=()=>{
+    if(sequence!==readSequence)return;
+    cropLoading=false;
     if(image.naturalWidth<100||image.naturalHeight<100){feedback.textContent='This image is too small to crop.';cropButton.hidden=false;return;}
     const source=committedFile||new File([],'event-cover.jpg',{type:'image/jpeg'});
     openCropEditor(image,source);
    };
-   image.onerror=()=>{feedback.textContent='The current image could not be opened for cropping.';cropButton.hidden=false;};
+   image.onerror=()=>{if(sequence!==readSequence)return;cropLoading=false;feedback.textContent='The current image could not be opened for cropping.';cropButton.hidden=false;};
    image.src=preview.src;
   }
 
@@ -253,6 +264,7 @@
   eventCoverForm.querySelectorAll('input[name="artwork"]:not([value="upload"])').forEach(choice=>choice.addEventListener('change',()=>{
    if(choice.checked){
     readSequence++;
+    cropLoading=false;
     committedFile=null;
     file.value='';
     committedPreview={...initialPreview};
@@ -303,6 +315,11 @@
   cropDialog.addEventListener('cancel',event=>{event.preventDefault();cancelCrop();});
   cropDialog.addEventListener('click',event=>{if(event.target===cropDialog)cancelCrop();});
   eventCoverForm.addEventListener('submit',event=>{
+   if(cropLoading){
+    event.preventDefault();
+    feedback.textContent='Please wait while the image editor prepares your image.';
+    return;
+   }
    if(cropDialog.open){
     event.preventDefault();
     cropStatus.textContent='Choose “Use cropped image” or cancel before saving.';
