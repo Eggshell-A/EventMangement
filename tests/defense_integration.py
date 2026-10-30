@@ -113,8 +113,15 @@ try:
     saved_hash=scalar('SELECT password_hash FROM users WHERE user_id=?',[sid])
     for purpose in ['reset','verify']:
         raw=os.urandom(32).hex();db("INSERT INTO account_tokens(user_id,purpose,token_hash,expires_at)VALUES(?,?,?,DATE_ADD(NOW(),INTERVAL 1 DAY))",[sid,purpose,hashlib.sha256(raw.encode()).hexdigest()])
-        r=post(guest,'reset_password.php' if purpose=='reset' else 'verify_email.php',{'token':raw,'password':PW,'password_confirm':PW})
-        check('invalid' in r.text,'legacy staff '+purpose+' token is refused')
+        if purpose=='reset':
+            r=post(guest,'reset_password.php',{'token':raw,'password':PW,'password_confirm':PW})
+            check('invalid' in r.text,'legacy staff reset token is refused')
+        else:
+            opened=guest.get(URL+'/verify_email.php?token='+raw,timeout=20,allow_redirects=False)
+            challenge_match=re.fullmatch(r'verify_email\\.php\\?challenge=([a-f0-9]{32})',opened.headers.get('Location',''))
+            check(opened.status_code==303 and challenge_match is not None,'legacy staff verify link opens only a session-bound challenge')
+            r=post(guest,'verify_email.php',{'challenge':challenge_match.group(1)})
+            check(r.status_code==303 and r.headers.get('Location')=='verify_email.php?status=invalid','legacy staff verify token is refused')
     check(scalar('SELECT password_hash FROM users WHERE user_id=?',[sid])==saved_hash and scalar('SELECT email_verified_at FROM users WHERE user_id=?',[sid]) is None,'legacy links cannot alter staff credentials or mailbox status')
     check(scalar('SELECT COUNT(*) FROM notifications WHERE user_id=?',[sid])>0,'staff security notices are delivered in-app')
     check(not any(staff_email in f.read_text() for f in (ROOT/'storage/mail').glob('*.txt')),'creation and MFA do not email a managed login ID')
