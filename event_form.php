@@ -162,6 +162,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+$categoryOptions = categories();
+$selectedCategory = (string) ($values['category'] ?? '');
+if (!in_array($selectedCategory, $categoryOptions, true)) {
+    $selectedCategory = '';
+}
 $pageTitle = $event ? 'Edit event' : 'Create event';
 require __DIR__ . '/includes/header.php';
 $startValue = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($values['start_time'] ?? '') : (isset($values['start_time']) ? date('Y-m-d\TH:i', strtotime($values['start_time'])) : '');
@@ -179,19 +184,13 @@ $startValue = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($values['start_time'] ?? 
   <label for="location">Location</label><input id="location" name="location" required maxlength="200" value="<?= e($values['location'] ?? '') ?>">
   <label for="capacity">Capacity</label><input id="capacity" type="number" min="1" max="100000" name="capacity" required value="<?= e((string) ($values['capacity'] ?? '')) ?>">
 <label for="category">Category</label>
-<select id="category" name="category" required>
-    <option value="" disabled
-        <?= $selectedCategory === '' ? 'selected' : '' ?>>
-        Select a category
-    </option>
-
+  <select id="category" name="category" required>
+    <option value="" disabled <?= $selectedCategory === '' ? 'selected' : '' ?>>Select a category</option>
     <?php foreach ($categoryOptions as $cat): ?>
-        <option value="<?= e($cat) ?>"
-            <?= $selectedCategory === $cat ? 'selected' : '' ?>>
-            <?= e($cat) ?>
-        </option>
+      <option value="<?= e($cat) ?>" <?= $selectedCategory === $cat ? 'selected' : '' ?>><?= e($cat) ?></option>
     <?php endforeach; ?>
-</select>  <label for="social_url">Event website or social link (optional)</label><input id="social_url" type="url" name="social_url" maxlength="500" value="<?=e($values['social_url']??'')?>" placeholder="https://">
+  </select>
+  <label for="social_url">Event website or social link (optional)</label><input id="social_url" type="url" name="social_url" maxlength="500" value="<?=e($values['social_url']??'')?>" placeholder="https://">
   <?php $selectedCover = $_SERVER['REQUEST_METHOD'] === 'POST'
       ? ($values['artwork_choice'] ?? '')
       : ($event ? (!empty($event['image_path']) ? 'upload' : ($event['artwork'] ?? '')) : ''); ?>
