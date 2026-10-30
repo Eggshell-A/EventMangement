@@ -118,7 +118,7 @@ try:
             check('invalid' in r.text,'legacy staff reset token is refused')
         else:
             opened=guest.get(URL+'/verify_email.php?token='+raw,timeout=20,allow_redirects=False)
-            challenge_match=re.fullmatch(r'verify_email\\.php\\?challenge=([a-f0-9]{32})',opened.headers.get('Location',''))
+            challenge_match=re.fullmatch(r'verify_email\.php\?challenge=([a-f0-9]{32})',opened.headers.get('Location',''))
             check(opened.status_code==303 and challenge_match is not None,'legacy staff verify link opens only a session-bound challenge')
             r=post(guest,'verify_email.php',{'challenge':challenge_match.group(1)})
             check(r.status_code==303 and r.headers.get('Location')=='verify_email.php?status=invalid','legacy staff verify token is refused')
