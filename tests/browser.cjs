@@ -5,7 +5,7 @@ const {execFileSync}=require('node:child_process');
 // Refuse mutation outside the same dedicated database used by the HTTP suite.
 JSON.parse(execFileSync('php',[__dirname+'/db_fixture.php'],{input:JSON.stringify({sql:'SELECT 1'}),encoding:'utf8'}));
 const url=process.env.EVENTLINK_TEST_URL||'http://127.0.0.1:8080';
-const pass=process.env.EVENTLINK_DEMO_PASSWORD||'FairboardDemo!2026';
+const pass=process.env.EVENTLINK_DEMO_PASSWORD||'FairboardDemoP@ssw0rd';
 const dir=__dirname+'/../test-results';fs.mkdirSync(dir,{recursive:true});
 function fixture(value){return JSON.parse(execFileSync('php',[__dirname+'/db_fixture.php'],{input:JSON.stringify(value),encoding:'utf8'}));}
 function recovery(role){const id=fixture({sql:'SELECT user_id FROM users WHERE email=?',params:[role+'@fairboard.test']}).rows[0].user_id;return fixture({mfa_recovery:Number(id)});}

@@ -32,7 +32,7 @@ jobs:
       - name: Dedicated database and HTTP regressions
         env:
           EVENTLINK_TEST_ALLOW_MUTATION: '1'
-          EVENTLINK_DEMO_PASSWORD: FairboardDemo!2026
+          EVENTLINK_DEMO_PASSWORD: FairboardDemoP@ssw0rd
         run: |
           sudo service mariadb start
           sudo mariadb -e "CREATE DATABASE eventlink_ci_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE USER 'ci'@'127.0.0.1' IDENTIFIED BY 'ci-only'; GRANT ALL ON *.* TO 'ci'@'127.0.0.1';"
