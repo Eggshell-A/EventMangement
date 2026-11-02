@@ -15,7 +15,7 @@ A PHP + MySQL community event platform with a cinematic discovery interface, com
 2. Copy `config.example.php` to the gitignored `config.php`. Set database credentials, the complete `base_url` (including a subdirectory if applicable) and timezone.
 3. Generate a private application key with `php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"` and paste it into `app_key`. Keep it out of Git and preserve it across deployments.
 4. Run `composer install --no-dev`.
-5. For development, optionally run `php tools/seed_demo.php`. It creates sample events and prints a randomly generated password for newly created `.test` accounts. Existing accounts are not overwritten.
+5. For development, optionally run `php tools/seed_demo.php`. It creates sample events and the accounts listed below. Existing accounts are not overwritten unless `--reset-passwords` is supplied.
 6. Start `php -S 127.0.0.1:8080 router.php` and set `base_url` to `http://127.0.0.1:8080`, or serve with Apache and the included `.htaccess`.
 
 For an existing database, back up both the database and uploaded covers and any existing `uploads/` posters, install the code/dependencies, then run:
@@ -29,6 +29,27 @@ The migration adds missing columns/tables, maps legacy roles, and backfills crea
 **Windows / XAMPP and Ubuntu instructions:** [Setup guide](docs/SETUP_JA.md).
 
 For the personal fork's main branch, upstream sync, archived branches and recovery commands, see [repository maintenance](docs/REPOSITORY_MAINTENANCE_JA.md).
+
+## Development demo accounts
+
+With `app_env=development`, `php tools/seed_demo.php` creates these shared demo logins:
+
+| Email | Password |
+|---|---|
+| `admin@fairboard.test` | `AdminP@ssw0rd` |
+| `staff@fairboard.test` | `StaffP@ssw0rd` |
+| `creator@fairboard.test` | `CreatorP@ssw0rd` |
+| `user@fairboard.test` | `UserP@ssw0rd` |
+
+To apply these passwords to existing demo accounts after updating the code, run:
+
+```sh
+php tools/seed_demo.php --reset-passwords
+```
+
+This resets only the four demo accounts, revokes their existing sessions and password-reset links, and preserves their roles, MFA, account settings and existing events. A mismatched demo role stops the operation without changing any accounts. Admin/staff still require authenticator enrollment or their existing MFA. The reset does not reactivate disabled accounts or clear a required password change.
+
+A nonempty `EVENTLINK_DEMO_PASSWORD` overrides all four passwords with one shared value for either command. Unset it to use the table above. These public credentials are for development demos only; the seeder refuses production mode.
 
 ## What works
 
@@ -78,7 +99,7 @@ The original unauthenticated third-party AI image demo has been replaced with an
 
 ## Tests
 
-GitHub Actions runs the security, migration, cover-storage and HTTP regression suites on pushes to `main`, pull requests targeting `main`, and manual dispatch. An open PR provides CI for a working branch; branch pushes do not also start a duplicate run. Browser scripts receive syntax checks in CI; the Playwright browser suite below must be run separately.
+GitHub Actions runs the security, demo-seeding, migration, cover-storage and HTTP regression suites on pushes to `main`, pull requests targeting `main`, and manual dispatch. An open PR provides CI for a working branch; branch pushes do not also start a duplicate run. Browser scripts receive syntax checks in CI; the Playwright browser suite below must be run separately.
 
 The earlier `SECURITY_RELEASE.md`, `TESTING.md`, `security_test_results.json` and legacy test scripts are retained as historical records. Use the current suites below and [release test report](docs/TEST_REPORT.md).
 
@@ -88,6 +109,8 @@ php tests/migration.php
 EVENTLINK_TEST_ALLOW_MUTATION=1 python3 tests/integration.py
 node tests/browser.cjs
 ```
+
+`EVENTLINK_TEST_ALLOW_MUTATION=1 php tests/demo_seed_test.php` checks default passwords, repeat seeding, explicit resets, account/MFA preservation, rollback and the shared override. Run it only against an empty, freshly imported `_test` database; it leaves the four default demo accounts ready for the HTTP tests.
 
 Integration/migration tests refuse a non-development database or a database name not ending in `_test`. Create a dedicated test database, seed it, and run a local server first. The HTTP suite needs Python `requests` and `Pillow`; the browser suite needs Playwright and Chromium. Use `EVENTLINK_TEST_URL`, `EVENTLINK_DEMO_PASSWORD`, and optionally `CHROMIUM_EXECUTABLE`. On Linux use `PHP_CLI_SERVER_WORKERS=4` for genuine parallel HTTP checks. Never run these mutation tests against real user data. Test artefacts go to gitignored `test-results/`.
 
