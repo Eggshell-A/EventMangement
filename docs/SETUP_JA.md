@@ -83,7 +83,24 @@ php tools/migrate.php /private/path/migration-config.php
 php tools/seed_demo.php
 ```
 
-`user@fairboard.test`、`creator@fairboard.test`、`staff@fairboard.test`、`admin@fairboard.test` とイベントを作成します。**新しく作ったアカウントのランダムパスワードは実行結果に表示されます。** 既存アカウントのパスワードは変更しません。過去の `seed_week*.sql` の共通パスワードを本番に持ち込まないでください。
+次のアカウントとイベントを作成します。通常の実行では、既存アカウントのパスワードは変更しません。
+
+| メールアドレス | パスワード |
+|---|---|
+| `admin@fairboard.test` | `AdminP@ssw0rd` |
+| `staff@fairboard.test` | `StaffP@ssw0rd` |
+| `creator@fairboard.test` | `CreatorP@ssw0rd` |
+| `user@fairboard.test` | `UserP@ssw0rd` |
+
+コード更新後、既存の4つのデモアカウントにも上記のパスワードを設定する場合:
+
+```bash
+php tools/seed_demo.php --reset-passwords
+```
+
+対象の既存セッションとパスワード再設定リンクは失効します。MFA、権限、アカウント設定、既存イベントは保持します。メールアドレスと権限が対応しない場合は、アカウントの変更をすべて取り消して停止します。無効化されたアカウントの再有効化や、初回パスワード変更要求の解除は行いません。admin / staff の MFA 登録・確認は引き続き必要です。
+
+`EVENTLINK_DEMO_PASSWORD` に空でない値を設定している場合は、4アカウントすべてでその値を使用します。表の値を使う場合は、この環境変数を解除してください。公開されたデモ用の認証情報なので、開発環境だけで利用してください。
 
 ## 開発者用「SQL」ボタン
 
