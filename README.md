@@ -26,7 +26,9 @@ php tools/migrate.php
 
 The migration adds missing columns/tables, maps legacy roles, and backfills creator plans without deleting existing users, events or bookings. It is safe to repeat. An optional first argument supplies a configuration file outside the web root for a separate migration account. Use a database account with schema privileges for migration; the runtime account only needs SELECT/INSERT/UPDATE/DELETE.
 
-**Windows / XAMPP and Ubuntu instructions:**
+**Windows / XAMPP and Ubuntu instructions:** [Setup guide](docs/SETUP_JA.md).
+
+For the personal fork's main branch, upstream sync, archived branches and recovery commands, see [repository maintenance](docs/REPOSITORY_MAINTENANCE_JA.md).
 
 ## What works
 
@@ -75,6 +77,8 @@ Public registration cannot create staff/admin accounts. To bootstrap an administ
 The original unauthenticated third-party AI image demo has been replaced with an authenticated cover studio: ten local SVG illustrations or validated/re-encoded image upload. It does not send prompts or images to a third-party AI provider. Generated artwork from a service can be uploaded as a normal image with appropriate usage rights.
 
 ## Tests
+
+GitHub Actions runs the security, migration, cover-storage and HTTP regression suites on pushes to `main`, pull requests targeting `main`, and manual dispatch. An open PR provides CI for a working branch; branch pushes do not also start a duplicate run. Browser scripts receive syntax checks in CI; the Playwright browser suite below must be run separately.
 
 The earlier `SECURITY_RELEASE.md`, `TESTING.md`, `security_test_results.json` and legacy test scripts are retained as historical records. Use the current suites below and [release test report](docs/TEST_REPORT.md).
 
