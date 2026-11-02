@@ -1,12 +1,13 @@
 """Run ONLY against a dedicated *_test database and local app.
 EVENTLINK_TEST_ALLOW_MUTATION=1 python3 tests/integration.py
-Requires requests, PHP on PATH, seeded demo accounts with EVENTLINK_DEMO_PASSWORD.
+Requires requests, PHP on PATH, seeded demo accounts (optional shared EVENTLINK_DEMO_PASSWORD override).
 """
 import os,re,json,time,subprocess,concurrent.futures,hashlib,base64,io
 from pathlib import Path
 import requests
 if os.getenv('EVENTLINK_TEST_ALLOW_MUTATION')!='1':raise SystemExit('Set EVENTLINK_TEST_ALLOW_MUTATION=1 for the dedicated test database.')
-ROOT=Path(__file__).resolve().parents[1];URL=os.getenv('EVENTLINK_TEST_URL','http://127.0.0.1:8080');PASSWORD='TestAccount!2026';DEMO=os.getenv('EVENTLINK_DEMO_PASSWORD','FairboardDemo!2026');checks=[]
+ROOT=Path(__file__).resolve().parents[1];URL=os.getenv('EVENTLINK_TEST_URL','http://127.0.0.1:8080');PASSWORD='TestAccount!2026';DEMO_PASSWORDS={'user':'UserP@ssw0rd','creator':'CreatorP@ssw0rd','staff':'StaffP@ssw0rd','admin':'AdminP@ssw0rd'};checks=[]
+def demo_password(role):return os.getenv('EVENTLINK_DEMO_PASSWORD') or DEMO_PASSWORDS[role]
 def db(sql,params=()):
  r=subprocess.run(['php',str(ROOT/'tests/db_fixture.php')],input=json.dumps({'sql':sql,'params':list(params)}),text=True,capture_output=True,check=True)
  return json.loads(r.stdout)
@@ -38,6 +39,8 @@ def create(name,role='user'):
  v=account(name,role);ids.append(v[0]);return v
 try:
  db('DELETE FROM auth_rate_limits')
+ for role in DEMO_PASSWORDS:
+  demo=login(role+'@fairboard.test',demo_password(role));demo.close()
  guest=requests.Session();r=get(guest,'index.php');check(r.status_code==200 and 'Less scrolling.' in r.text,'public discovery renders');check("script-src 'self'" in r.headers.get('Content-Security-Policy',''),'strict self-hosted CSP');check(r.headers.get('X-Content-Type-Options')=='nosniff','nosniff header');check('HttpOnly' in r.headers.get('Set-Cookie','') and 'SameSite=Lax' in r.headers.get('Set-Cookie',''),'cookie security flags')
  for path in ['config.php','security_test_results.json','database.sql','database/release_tables.sql','tools/migrate.php','tests/db_fixture.php','storage/mail/example.txt','includes/security.php','.git/config','composer.lock']:
   check(get(guest,path).status_code==404,'private file blocked '+path)
@@ -75,7 +78,7 @@ try:
  # Password reset revokes a previously authenticated session.
  r=post(guest,'forgot_password.php',{'email':u3_email});check('If an active account matches' in r.text,'password-reset response is generic');raw=mailtoken(u3_email,'reset_password.php');check(scalar('SELECT token_hash FROM account_tokens WHERE user_id=? AND purpose=?',[u3_id,'reset'])==hashlib.sha256(raw.encode()).hexdigest(),'only reset-token hash stored');newpass='DifferentPass!2026';r=post(guest,'reset_password.php',{'token':raw,'password':newpass,'password_confirm':newpass});check(r.status_code==302,'password reset accepted');check('login.php' in get(u3,'account.php').url,'old sessions revoked after reset');check('invalid, expired or already used' in post(guest,'reset_password.php',{'token':raw,'password':newpass,'password_confirm':newpass}).text,'reset token replay rejected');u3=login(u3_email,newpass)
  # Real read-only developer view, gated separately from normal admin.
- admin=login('admin@fairboard.test',DEMO);r=get(admin,'developer.php');check('Confirm your password' in r.text,'developer requires reauthentication');r=post(admin,'developer.php',{'password':DEMO,'code':recovery(int(scalar("SELECT user_id FROM users WHERE email='admin@fairboard.test'")))});check(r.status_code==302,'developer reauthentication succeeds');r=get(admin,'developer.php?table=users');check('Table structure' in r.text and 'password_hash' in r.text,'developer schema includes hidden column metadata');check(hash_value not in r.text and u1_email in r.text,'developer rows show authorized email but hide password hashes');check(get(admin,'developer.php?table=users%60%20UNION%20SELECT').status_code==400,'developer table injection rejected')
+ admin=login('admin@fairboard.test',demo_password('admin'));r=get(admin,'developer.php');check('Confirm your password' in r.text,'developer requires reauthentication');r=post(admin,'developer.php',{'password':demo_password('admin'),'code':recovery(int(scalar("SELECT user_id FROM users WHERE email='admin@fairboard.test'")))});check(r.status_code==302,'developer reauthentication succeeds');r=get(admin,'developer.php?table=users');check('Table structure' in r.text and 'password_hash' in r.text,'developer schema includes hidden column metadata');check(hash_value not in r.text and u1_email in r.text,'developer rows show authorized email but hide password hashes');check(get(admin,'developer.php?table=users%60%20UNION%20SELECT').status_code==400,'developer table injection rejected')
  # Admin queue and fixed-price offline ledger.
  r=post(creator,'event_form.php',{'title':'Created '+stamp,'description':'Created by integration suite','start_time':time.strftime('%Y-%m-%dT19:00',time.gmtime(time.time()+86400*30)),'location':'Campus','capacity':'20','category':'Film','artwork':'cinema'});check(r.status_code==302,'creator submits complete event form');ce=int(scalar('SELECT event_id FROM events WHERE title=?',['Created '+stamp]));check(scalar('SELECT status FROM events WHERE event_id=?',[ce])=='pending','new event awaits moderation');check(get(guest,'event.php?id='+str(ce)).status_code==404,'pending event hidden from public');post(admin,'admin_action.php',{'action':'approve','event_id':ce});check(scalar('SELECT status FROM events WHERE event_id=?',[ce])=='approved','admin approves event');
  post(creator,'billing.php',{'action':'request_invoice','amount_cents':'1'});post(creator,'billing.php',{'action':'request_invoice'});invoices=rows('SELECT * FROM creator_invoices WHERE user_id=?',[creator_id]);check(len(invoices)==1 and int(invoices[0]['amount_cents'])==8000,'monthly invoice is idempotent and price is server controlled');post(admin,'billing.php',{'action':'record_payment','invoice_id':invoices[0]['invoice_id'],'reference':'TEST-RECEIPT'});check(scalar('SELECT status FROM creator_invoices WHERE invoice_id=?',[invoices[0]['invoice_id']])=='paid','admin records offline payment');check(post(creator,'billing.php',{'action':'record_payment','invoice_id':invoices[0]['invoice_id'],'reference':'FORGED'}).status_code==403,'creator cannot forge payment receipt')

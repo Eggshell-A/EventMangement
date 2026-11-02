@@ -39,7 +39,7 @@ composer install --no-interaction --no-plugins
 composer test
 php tests/migration.php
 php tests/cover_storage_test.php
-EVENTLINK_DEMO_PASSWORD='FairboardDemo!2026' php tools/seed_demo.php
+EVENTLINK_DEMO_PASSWORD='FairboardDemoP@ssw0rd' php tools/seed_demo.php
 PHP_CLI_SERVER_WORKERS=4 php -S 127.0.0.1:8080 router.php
 # In a separate terminal, with requests and Pillow installed:
 EVENTLINK_TEST_ALLOW_MUTATION=1 python3 tests/defense_integration.py

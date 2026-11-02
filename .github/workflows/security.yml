@@ -1,7 +1,10 @@
 name: Security checks
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
@@ -28,17 +31,17 @@ jobs:
           find . -path ./vendor -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l
           node --check assets/app.js
           node --check tests/browser.cjs
+          node --check tests/form_recovery_browser.cjs
           composer test
       - name: Dedicated database and HTTP regressions
         env:
           EVENTLINK_TEST_ALLOW_MUTATION: '1'
-          EVENTLINK_DEMO_PASSWORD: FairboardDemo!2026
         run: |
           sudo service mariadb start
           sudo mariadb -e "CREATE DATABASE eventlink_ci_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE USER 'ci'@'127.0.0.1' IDENTIFIED BY 'ci-only'; GRANT ALL ON *.* TO 'ci'@'127.0.0.1';"
           mariadb -h127.0.0.1 -uci -pci-only eventlink_ci_test < database.sql
           php -r '$c=require "config.example.php"; $c["db_name"]="eventlink_ci_test"; $c["db_user"]="ci"; $c["db_pass"]="ci-only"; $c["base_url"]="http://127.0.0.1:8080"; $c["app_key"]=bin2hex(random_bytes(32)); $c["enable_developer_tools"]=true; $c["developer_user_ids"]=[4]; file_put_contents("config.php","<?php return ".var_export($c,true).";");'
-          php tools/seed_demo.php
+          php tests/demo_seed_test.php
           php tests/migration.php
           php tests/cover_storage_test.php
           PHP_CLI_SERVER_WORKERS=4 php -S 127.0.0.1:8080 router.php > /tmp/fairboard-http.log 2>&1 &

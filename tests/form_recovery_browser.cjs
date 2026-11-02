@@ -5,7 +5,7 @@ const fs=require('node:fs');const assert=require('node:assert/strict');
 const fixture=v=>JSON.parse(execFileSync('php',[__dirname+'/db_fixture.php'],{input:JSON.stringify(v),encoding:'utf8'}));
 fixture({sql:'SELECT 1'});
 const url=process.env.EVENTLINK_TEST_URL||'http://127.0.0.1:8080';
-const password=process.env.EVENTLINK_DEMO_PASSWORD||'FairboardDemo!2026';
+const password=process.env.EVENTLINK_DEMO_PASSWORD||'UserP@ssw0rd';
 const dir=__dirname+'/../test-results';fs.mkdirSync(dir,{recursive:true});
 let passed=0;const check=(ok,label)=>{assert.ok(ok,label);passed++;console.log('PASS',label);};
 (async()=>{
